@@ -360,7 +360,7 @@ class ComparisonJumpTest < Minitest::Test
     @machine.memory[3] = @inst_class.new(address: 0, field: 2, opcode: @inst_class::JAN).to_word  # JAP
     @machine.memory[4] = @inst_class.new(opcode: @inst_class::HLT, field: 2).to_word
 
-    count = @machine.run
+    @machine.run
 
     # Should have executed: 10 iterations * 4 instructions + 1 final HLT
     # Each iteration: LDA, ADD, STA, JAP (4 instructions)

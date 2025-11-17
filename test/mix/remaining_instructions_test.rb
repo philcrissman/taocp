@@ -43,7 +43,7 @@ class MixRemainingInstructionsTest < Minitest::Test
 
     @machine.step
 
-    assert_equal -1, @machine.registers.a.sign
+    assert_equal(-1, @machine.registers.a.sign)
     assert_equal [2, 3, 4, 5, 0], @machine.registers.a.bytes
   end
 
@@ -109,7 +109,7 @@ class MixRemainingInstructionsTest < Minitest::Test
 
     @machine.step
 
-    assert_equal -1, @machine.registers.a.sign
+    assert_equal(-1, @machine.registers.a.sign)
     assert_equal 1, @machine.registers.x.sign
   end
 
@@ -308,8 +308,8 @@ class MixRemainingInstructionsTest < Minitest::Test
 
     @machine.step
 
-    assert_equal -1, @machine.registers.a.sign
-    assert_equal -1, @machine.registers.x.sign
+    assert_equal(-1, @machine.registers.a.sign)
+    assert_equal(-1, @machine.registers.x.sign)
     # Bytes represent absolute value
     assert_equal [30, 30, 30, 30, 30], @machine.registers.a.bytes
     assert_equal [31, 32, 33, 34, 35], @machine.registers.x.bytes
