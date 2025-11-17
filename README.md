@@ -7,7 +7,7 @@ A complete Ruby implementation of **MIX**, the mythical computer created by Dona
 [MIX](https://en.wikipedia.org/wiki/MIX_(abstract_machine)) is a hypothetical computer designed by Donald Knuth in the 1960s as a pedagogical tool for teaching fundamental computer science concepts. It appears throughout TAOCP to illustrate algorithms in a machine-independent but concrete way.
 
 **Key characteristics:**
-- Base-64 arithmetic (not binary!)
+- Bytes hold values 0-63 (not 0-255 like modern computers)
 - Sign-magnitude representation
 - Word-addressed memory (not byte-addressed)
 - Simple, elegant instruction set
@@ -289,7 +289,7 @@ lib/taocp/
 
 ### Implementation Details
 
-- **Base-64 Arithmetic**: MIX uses base-64 bytes (0-63), not binary bytes (0-255)
+- **Byte Values**: MIX bytes hold values 0-63 (6-bit), not 0-255 (8-bit) like modern computers
 - **Sign-Magnitude**: Numbers use sign-magnitude representation, not two's complement
 - **Field Specifications**: Instructions can operate on partial words using (L:R) notation
 - **Two-Pass Assembly**: First pass builds symbol table, second pass generates code
