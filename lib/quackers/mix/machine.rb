@@ -156,6 +156,20 @@ module Quackers
           execute_jmp(inst)
         when Instruction::JAN
           execute_jan(inst)
+        when Instruction::J1N
+          execute_jin(inst, 1)
+        when Instruction::J2N
+          execute_jin(inst, 2)
+        when Instruction::J3N
+          execute_jin(inst, 3)
+        when Instruction::J4N
+          execute_jin(inst, 4)
+        when Instruction::J5N
+          execute_jin(inst, 5)
+        when Instruction::J6N
+          execute_jin(inst, 6)
+        when Instruction::JXN
+          execute_jxn(inst)
         when 48  # ENTA, ENNA, INCA, DECA (opcode for A register)
           execute_address_transfer_a(inst)
         when 49  # ENT1, ENN1, INC1, DEC1
@@ -702,6 +716,86 @@ module Quackers
           end
         when 5  # JANP - jump if A non-positive
           if a_value <= 0
+            @registers.j = @pc
+            @pc = m
+          end
+        end
+      end
+
+      # JiN - jump on index register i negative/zero/positive/etc.
+      def execute_jin(inst, reg_num)
+        m = inst.effective_address(@registers)
+        reg_value = @registers.get_index_i(reg_num)
+
+        # Field determines condition
+        case inst.field
+        when 0  # JiN - jump if Ii negative
+          if reg_value < 0
+            @registers.j = @pc
+            @pc = m
+          end
+        when 1  # JiZ - jump if Ii zero
+          if reg_value == 0
+            @registers.j = @pc
+            @pc = m
+          end
+        when 2  # JiP - jump if Ii positive
+          if reg_value > 0
+            @registers.j = @pc
+            @pc = m
+          end
+        when 3  # JiNN - jump if Ii non-negative
+          if reg_value >= 0
+            @registers.j = @pc
+            @pc = m
+          end
+        when 4  # JiNZ - jump if Ii non-zero
+          if reg_value != 0
+            @registers.j = @pc
+            @pc = m
+          end
+        when 5  # JiNP - jump if Ii non-positive
+          if reg_value <= 0
+            @registers.j = @pc
+            @pc = m
+          end
+        end
+      end
+
+      # JXN - jump on X negative/zero/positive/etc.
+      def execute_jxn(inst)
+        m = inst.effective_address(@registers)
+        x_value = @registers.x.to_i
+
+        # Field determines condition
+        case inst.field
+        when 0  # JXN - jump if X negative
+          if x_value < 0
+            @registers.j = @pc
+            @pc = m
+          end
+        when 1  # JXZ - jump if X zero
+          if x_value == 0
+            @registers.j = @pc
+            @pc = m
+          end
+        when 2  # JXP - jump if X positive
+          if x_value > 0
+            @registers.j = @pc
+            @pc = m
+          end
+        when 3  # JXNN - jump if X non-negative
+          if x_value >= 0
+            @registers.j = @pc
+            @pc = m
+          end
+        when 4  # JXNZ - jump if X non-zero
+          if x_value != 0
+            @registers.j = @pc
+            @pc = m
+          end
+        when 5  # JXNP - jump if X non-positive
+          if x_value <= 0
             @registers.j = @pc
             @pc = m
           end

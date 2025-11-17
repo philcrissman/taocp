@@ -232,18 +232,30 @@ module Quackers
 
       def find_comment_start(text)
         # Find comment start (not inside quotes)
-        # * is only a comment if preceded by whitespace (not at position 0 of address field)
+        # Comments can be:
+        # 1. Text after * (if preceded by whitespace)
+        # 2. Text after 2+ spaces (traditional MIXAL comment convention)
         in_string = false
+        prev_char = nil
         text.each_char.with_index do |char, i|
           if char == '"' || char == "'"
             in_string = !in_string
-          elsif !in_string && char == '*'
-            # * is a comment only if it's after whitespace (multiple spaces after operand)
-            # *at position 0 is current address operator, not a comment
-            if i > 0 && text[i-1] =~ /\s/
+          elsif !in_string
+            # Check for * as comment marker
+            if char == '*' && i > 0 && text[i-1] =~ /\s/
               return i
             end
+            # Check for multiple spaces indicating start of comment
+            # Look for pattern: non-space followed by 2+ spaces
+            if i > 2 && char =~ /\S/ && prev_char =~ /\s/ && text[i-2] =~ /\s/
+              # We found text after 2+ spaces - this is likely a comment
+              # Back up to where the spaces started
+              j = i - 1
+              j -= 1 while j > 0 && text[j] =~ /\s/
+              return j + 1
+            end
           end
+          prev_char = char
         end
         nil
       end

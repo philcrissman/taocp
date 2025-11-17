@@ -105,6 +105,56 @@ module Quackers
       JANZ = 40  # Jump A non-zero
       JANP = 40  # Jump A non-positive
 
+      # Jump on index register conditions
+      J1N  = 41  # Jump I1 negative
+      J1Z  = 41  # Jump I1 zero
+      J1P  = 41  # Jump I1 positive
+      J1NN = 41  # Jump I1 non-negative
+      J1NZ = 41  # Jump I1 non-zero
+      J1NP = 41  # Jump I1 non-positive
+
+      J2N  = 42  # Jump I2 negative
+      J2Z  = 42  # Jump I2 zero
+      J2P  = 42  # Jump I2 positive
+      J2NN = 42  # Jump I2 non-negative
+      J2NZ = 42  # Jump I2 non-zero
+      J2NP = 42  # Jump I2 non-positive
+
+      J3N  = 43  # Jump I3 negative
+      J3Z  = 43  # Jump I3 zero
+      J3P  = 43  # Jump I3 positive
+      J3NN = 43  # Jump I3 non-negative
+      J3NZ = 43  # Jump I3 non-zero
+      J3NP = 43  # Jump I3 non-positive
+
+      J4N  = 44  # Jump I4 negative
+      J4Z  = 44  # Jump I4 zero
+      J4P  = 44  # Jump I4 positive
+      J4NN = 44  # Jump I4 non-negative
+      J4NZ = 44  # Jump I4 non-zero
+      J4NP = 44  # Jump I4 non-positive
+
+      J5N  = 45  # Jump I5 negative
+      J5Z  = 45  # Jump I5 zero
+      J5P  = 45  # Jump I5 positive
+      J5NN = 45  # Jump I5 non-negative
+      J5NZ = 45  # Jump I5 non-zero
+      J5NP = 45  # Jump I5 non-positive
+
+      J6N  = 46  # Jump I6 negative
+      J6Z  = 46  # Jump I6 zero
+      J6P  = 46  # Jump I6 positive
+      J6NN = 46  # Jump I6 non-negative
+      J6NZ = 46  # Jump I6 non-zero
+      J6NP = 46  # Jump I6 non-positive
+
+      JXN  = 47  # Jump X negative
+      JXZ  = 47  # Jump X zero
+      JXP  = 47  # Jump X positive
+      JXNN = 47  # Jump X non-negative
+      JXNZ = 47  # Jump X non-zero
+      JXNP = 47  # Jump X non-positive
+
       # Miscellaneous
       NOP  = 0   # No operation
       HLT  = 5   # Halt

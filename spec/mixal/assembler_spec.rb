@@ -357,5 +357,44 @@ RSpec.describe Quackers::Mixal::Assembler do
       expect(machine.memory[result_addr].to_i).to eq(42)
     end
   end
+
+  describe "literal pool management" do
+    it "collects literals in a pool at end of program" do
+      source = <<~MIXAL
+        START LDA =100=
+              STA =200=
+              HLT
+      MIXAL
+
+      assembler.assemble(source)
+
+      # Literals should be at locations 3 and 4 (after the 3 instructions)
+      expect(assembler.memory[3].to_i).to eq(100)
+      expect(assembler.memory[4].to_i).to eq(200)
+
+      # First instruction should reference location 3
+      inst = Quackers::Mix::Instruction.from_word(assembler.memory[0])
+      expect(inst.address).to eq(3)
+    end
+
+    it "reuses same literal" do
+      source = <<~MIXAL
+        L1 LDA =42=
+        L2 ADD =42=
+           HLT
+      MIXAL
+
+      assembler.assemble(source)
+
+      # Should only have one literal in the pool (location 3)
+      expect(assembler.memory[3].to_i).to eq(42)
+
+      # Both instructions should reference the same location
+      inst1 = Quackers::Mix::Instruction.from_word(assembler.memory[0])
+      inst2 = Quackers::Mix::Instruction.from_word(assembler.memory[1])
+      expect(inst1.address).to eq(3)
+      expect(inst2.address).to eq(3)
+    end
+  end
 end
 

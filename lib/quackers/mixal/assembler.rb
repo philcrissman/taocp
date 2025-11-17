@@ -45,9 +45,17 @@ module Quackers
       def first_pass(ast)
         @location = 0
         @instructions = []
+        @literals = {}  # Reset literals
 
         ast.each do |node|
           process_node_first_pass(node)
+        end
+
+        # Allocate space for literal pool at end
+        @literals.each do |literal, _|
+          @literals[literal] = @location
+          @instructions << { node: :literal, location: @location, value: literal }
+          @location += 1
         end
       end
 
@@ -106,6 +114,11 @@ module Quackers
           @symbol_table.define(node.label, @location)
         end
 
+        # Collect literals
+        if node.address && node.address.to_s =~ /^=(.+)=$/
+          @literals[$&] ||= nil  # Mark for later allocation
+        end
+
         # Store instruction for second pass
         @instructions << { node: node, location: @location }
 
@@ -127,6 +140,13 @@ module Quackers
           location = inst_info[:location]
 
           case node
+          when :literal
+            # Generate literal pool entry
+            literal_text = inst_info[:value]
+            if literal_text =~ /^=(.+)=$/
+              value = $1.to_i
+              @memory[location] = Mix::Word.from_i(value)
+            end
           when Parser::PseudoOp
             process_pseudo_op_second_pass(node, location)
           when Parser::Instruction
@@ -172,10 +192,16 @@ module Quackers
         if node.address
           # Handle literals
           if node.address.to_s =~ /^=(.+)=$/
-            # Literal constant - for now, just extract the value
-            literal_value = $1.to_i
-            address_value = literal_value.abs
-            sign = literal_value < 0 ? -1 : 1
+            # Literal constant - use address from literal pool
+            literal_key = node.address.to_s
+            if @literals.key?(literal_key)
+              address_value = @literals[literal_key]
+            else
+              # Fallback: shouldn't happen if first pass worked correctly
+              literal_value = $1.to_i
+              address_value = literal_value.abs
+              sign = literal_value < 0 ? -1 : 1
+            end
           else
             # Regular address expression
             address_value = evaluate_expression(node.address, location)
@@ -265,6 +291,48 @@ module Quackers
         'JANN' => [Mix::Instruction::JAN, 3],
         'JANZ' => [Mix::Instruction::JAN, 4],
         'JANP' => [Mix::Instruction::JAN, 5],
+        'J1N' => [Mix::Instruction::J1N, 0],
+        'J1Z' => [Mix::Instruction::J1Z, 1],
+        'J1P' => [Mix::Instruction::J1P, 2],
+        'J1NN' => [Mix::Instruction::J1NN, 3],
+        'J1NZ' => [Mix::Instruction::J1NZ, 4],
+        'J1NP' => [Mix::Instruction::J1NP, 5],
+        'J2N' => [Mix::Instruction::J2N, 0],
+        'J2Z' => [Mix::Instruction::J2Z, 1],
+        'J2P' => [Mix::Instruction::J2P, 2],
+        'J2NN' => [Mix::Instruction::J2NN, 3],
+        'J2NZ' => [Mix::Instruction::J2NZ, 4],
+        'J2NP' => [Mix::Instruction::J2NP, 5],
+        'J3N' => [Mix::Instruction::J3N, 0],
+        'J3Z' => [Mix::Instruction::J3Z, 1],
+        'J3P' => [Mix::Instruction::J3P, 2],
+        'J3NN' => [Mix::Instruction::J3NN, 3],
+        'J3NZ' => [Mix::Instruction::J3NZ, 4],
+        'J3NP' => [Mix::Instruction::J3NP, 5],
+        'J4N' => [Mix::Instruction::J4N, 0],
+        'J4Z' => [Mix::Instruction::J4Z, 1],
+        'J4P' => [Mix::Instruction::J4P, 2],
+        'J4NN' => [Mix::Instruction::J4NN, 3],
+        'J4NZ' => [Mix::Instruction::J4NZ, 4],
+        'J4NP' => [Mix::Instruction::J4NP, 5],
+        'J5N' => [Mix::Instruction::J5N, 0],
+        'J5Z' => [Mix::Instruction::J5Z, 1],
+        'J5P' => [Mix::Instruction::J5P, 2],
+        'J5NN' => [Mix::Instruction::J5NN, 3],
+        'J5NZ' => [Mix::Instruction::J5NZ, 4],
+        'J5NP' => [Mix::Instruction::J5NP, 5],
+        'J6N' => [Mix::Instruction::J6N, 0],
+        'J6Z' => [Mix::Instruction::J6Z, 1],
+        'J6P' => [Mix::Instruction::J6P, 2],
+        'J6NN' => [Mix::Instruction::J6NN, 3],
+        'J6NZ' => [Mix::Instruction::J6NZ, 4],
+        'J6NP' => [Mix::Instruction::J6NP, 5],
+        'JXN' => [Mix::Instruction::JXN, 0],
+        'JXZ' => [Mix::Instruction::JXZ, 1],
+        'JXP' => [Mix::Instruction::JXP, 2],
+        'JXNN' => [Mix::Instruction::JXNN, 3],
+        'JXNZ' => [Mix::Instruction::JXNZ, 4],
+        'JXNP' => [Mix::Instruction::JXNP, 5],
         'INCA' => [Mix::Instruction::INCA, 2],
         'DECA' => [Mix::Instruction::DECA, 3],
         'ENTA' => [Mix::Instruction::ENTA, 0],
