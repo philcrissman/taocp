@@ -173,9 +173,8 @@ class MixMachineTest < Minitest::Test
     # Create a program that runs past the limit
     # We'll fill memory with enough NOPs that it would exceed MAX_INSTRUCTIONS
     nop = Taocp::Mix::Instruction.new(opcode: Taocp::Mix::Instruction::NOP).to_word
-    # Fill first 1000 locations with NOPs (more than enough to hit limit)
+    # Fill first 60 locations with NOPs (more than enough to hit temp limit)
     (0...60).each { |i| @machine.memory[i] = nop }
-
 
     # Should raise after 500 instructions
     assert_raises(Taocp::Mix::Error, /Instruction limit exceeded/) do
