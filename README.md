@@ -254,10 +254,10 @@ The `examples/` directory contains several example programs:
 
 ## Testing
 
-The project includes comprehensive test coverage (346 tests):
+The project includes comprehensive test coverage (345 tests):
 
 ```bash
-$ rspec
+$ rake test
 ```
 
 Test suites include:
@@ -310,7 +310,7 @@ After checking out the repo:
 
 ```bash
 $ bin/setup              # Install dependencies
-$ rake spec              # Run tests
+$ rake test              # Run tests
 $ bin/console            # Interactive prompt
 ```
 
