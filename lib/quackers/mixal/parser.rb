@@ -2,16 +2,8 @@
 
 module Quackers
   module Mixal
-    # Parses MIXAL tokens into AST
+    # Parser for MIXAL assembly (to be implemented)
     class Parser
-      def initialize(tokens)
-        @tokens = tokens
-      end
-
-      def parse
-        # TODO: Implement in Step 13
-        []
-      end
     end
   end
 end
