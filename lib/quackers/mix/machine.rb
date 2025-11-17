@@ -110,6 +110,26 @@ module Quackers
           execute_mul(inst)
         when Instruction::DIV
           execute_div(inst)
+        when Instruction::CMPA
+          execute_cmpa(inst)
+        when Instruction::CMPX
+          execute_cmpx(inst)
+        when Instruction::CMP1
+          execute_cmp1(inst)
+        when Instruction::CMP2
+          execute_cmp2(inst)
+        when Instruction::CMP3
+          execute_cmp3(inst)
+        when Instruction::CMP4
+          execute_cmp4(inst)
+        when Instruction::CMP5
+          execute_cmp5(inst)
+        when Instruction::CMP6
+          execute_cmp6(inst)
+        when Instruction::JMP
+          execute_jmp(inst)
+        when Instruction::JAN
+          execute_jan(inst)
         else
           raise Error, "Unknown opcode: #{inst.opcode}"
         end
@@ -364,6 +384,159 @@ module Quackers
         # Store results
         @registers.a = Word.from_i(quotient)
         @registers.x = Word.from_i(remainder)
+      end
+
+      # Comparison instructions
+      def execute_cmpa(inst)
+        compare_register(inst, @registers.a)
+      end
+
+      def execute_cmpx(inst)
+        compare_register(inst, @registers.x)
+      end
+
+      def execute_cmp1(inst)
+        compare_register(inst, @registers.get_index(1))
+      end
+
+      def execute_cmp2(inst)
+        compare_register(inst, @registers.get_index(2))
+      end
+
+      def execute_cmp3(inst)
+        compare_register(inst, @registers.get_index(3))
+      end
+
+      def execute_cmp4(inst)
+        compare_register(inst, @registers.get_index(4))
+      end
+
+      def execute_cmp5(inst)
+        compare_register(inst, @registers.get_index(5))
+      end
+
+      def execute_cmp6(inst)
+        compare_register(inst, @registers.get_index(6))
+      end
+
+      # Helper: Compare register with memory value
+      def compare_register(inst, register_value)
+        m = inst.effective_address(@registers)
+        l, r = Word.decode_field_spec(inst.field)
+        l, r = 0, 5 if inst.field == 0
+
+        # Get value from memory
+        memory_value = @memory[m].slice(l, r)
+
+        # Compare register with memory
+        reg_int = register_value.to_i
+        mem_int = memory_value.to_i
+
+        if reg_int < mem_int
+          @registers.comparison_flag = :less
+        elsif reg_int == mem_int
+          @registers.comparison_flag = :equal
+        else
+          @registers.comparison_flag = :greater
+        end
+      end
+
+      # Jump instructions
+      # JMP uses field spec to determine condition
+      def execute_jmp(inst)
+        m = inst.effective_address(@registers)
+
+        # Field determines jump condition
+        case inst.field
+        when 0  # JMP - unconditional jump
+          @registers.j = @pc  # Save return address
+          @pc = m
+        when 1  # JSJ - jump, save J (but don't modify J)
+          @pc = m
+        when 2  # JOV - jump on overflow
+          if @registers.overflow
+            @registers.j = @pc
+            @pc = m
+            @registers.overflow = false  # Reset overflow
+          end
+        when 3  # JNOV - jump on no overflow
+          unless @registers.overflow
+            @registers.j = @pc
+            @pc = m
+          else
+            @registers.overflow = false
+          end
+        when 4  # JL - jump if less
+          if @registers.comparison_flag == :less
+            @registers.j = @pc
+            @pc = m
+          end
+        when 5  # JE - jump if equal
+          if @registers.comparison_flag == :equal
+            @registers.j = @pc
+            @pc = m
+          end
+        when 6  # JG - jump if greater
+          if @registers.comparison_flag == :greater
+            @registers.j = @pc
+            @pc = m
+          end
+        when 7  # JGE - jump if greater or equal
+          if @registers.comparison_flag == :greater || @registers.comparison_flag == :equal
+            @registers.j = @pc
+            @pc = m
+          end
+        when 8  # JNE - jump if not equal
+          if @registers.comparison_flag != :equal
+            @registers.j = @pc
+            @pc = m
+          end
+        when 9  # JLE - jump if less or equal
+          if @registers.comparison_flag == :less || @registers.comparison_flag == :equal
+            @registers.j = @pc
+            @pc = m
+          end
+        end
+      end
+
+      # JAN - jump on A negative/zero/positive/etc.
+      def execute_jan(inst)
+        m = inst.effective_address(@registers)
+        a_value = @registers.a.to_i
+
+        # Field determines condition
+        case inst.field
+        when 0  # JAN - jump if A negative
+          if a_value < 0
+            @registers.j = @pc
+            @pc = m
+          end
+        when 1  # JAZ - jump if A zero
+          if a_value == 0
+            @registers.j = @pc
+            @pc = m
+          end
+        when 2  # JAP - jump if A positive
+          if a_value > 0
+            @registers.j = @pc
+            @pc = m
+          end
+        when 3  # JANN - jump if A non-negative
+          if a_value >= 0
+            @registers.j = @pc
+            @pc = m
+          end
+        when 4  # JANZ - jump if A non-zero
+          if a_value != 0
+            @registers.j = @pc
+            @pc = m
+          end
+        when 5  # JANP - jump if A non-positive
+          if a_value <= 0
+            @registers.j = @pc
+            @pc = m
+          end
+        end
       end
     end
   end
