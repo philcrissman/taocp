@@ -135,6 +135,23 @@ module Quackers
         [field / 8, field % 8]
       end
 
+      # Create a Word from an ALF string (up to 5 characters)
+      # ALF = "alphabetic" data in MIXAL
+      def self.from_alf(str)
+        raise ArgumentError, "ALF string too long (max 5 chars)" if str.length > 5
+
+        codes = Character.string_to_codes(str)
+        # Pad to 5 characters with spaces if needed
+        codes += [0] * (5 - codes.length) if codes.length < 5
+
+        new(sign: 1, bytes: codes)
+      end
+
+      # Convert this Word to an ALF string
+      def to_alf
+        Character.codes_to_string(@bytes)
+      end
+
       # Equality comparison
       def ==(other)
         return false unless other.is_a?(Word)

@@ -345,4 +345,76 @@ RSpec.describe Quackers::Mix::Word do
       expect(positive_zero).not_to eq(negative_zero)
     end
   end
+
+  describe ".from_alf" do
+    it "creates a word from a 5-character string" do
+      word = described_class.from_alf("HELLO")
+      # H=8, E=5, L=12, L=12, O=15
+      expect(word.bytes).to eq([8, 5, 12, 12, 15])
+      expect(word.sign).to eq(1)
+    end
+
+    it "pads short strings with spaces" do
+      word = described_class.from_alf("HI")
+      # H=8, I=9, then 3 spaces
+      expect(word.bytes).to eq([8, 9, 0, 0, 0])
+    end
+
+    it "handles single characters" do
+      word = described_class.from_alf("A")
+      expect(word.bytes).to eq([1, 0, 0, 0, 0])
+    end
+
+    it "handles empty string" do
+      word = described_class.from_alf("")
+      expect(word.bytes).to eq([0, 0, 0, 0, 0])
+    end
+
+    it "raises error for strings longer than 5 characters" do
+      expect { described_class.from_alf("TOOLONG") }.to raise_error(ArgumentError, /too long/)
+    end
+
+    it "is case-insensitive" do
+      word1 = described_class.from_alf("HELLO")
+      word2 = described_class.from_alf("hello")
+      expect(word1).to eq(word2)
+    end
+  end
+
+  describe "#to_alf" do
+    it "converts a word to ALF string" do
+      word = described_class.new(sign: 1, bytes: [8, 5, 12, 12, 15])
+      expect(word.to_alf).to eq("HELLO")
+    end
+
+    it "converts spaces correctly" do
+      word = described_class.new(sign: 1, bytes: [8, 9, 0, 0, 0])
+      expect(word.to_alf).to eq("HI   ")
+    end
+
+    it "converts all spaces to space string" do
+      word = described_class.new(sign: 1, bytes: [0, 0, 0, 0, 0])
+      expect(word.to_alf).to eq("     ")
+    end
+
+    it "ignores sign (ALF is always character data)" do
+      word = described_class.new(sign: -1, bytes: [8, 5, 12, 12, 15])
+      expect(word.to_alf).to eq("HELLO")
+    end
+  end
+
+  describe "ALF round-trip conversion" do
+    it "round-trips 5-character strings" do
+      ["HELLO", "WORLD", "MIX01", "12345", "A B C"].each do |str|
+        word = described_class.from_alf(str)
+        result = word.to_alf
+        expect(result).to eq(str.upcase)
+      end
+    end
+
+    it "round-trips short strings (with padding)" do
+      word = described_class.from_alf("HI")
+      expect(word.to_alf).to eq("HI   ")
+    end
+  end
 end
