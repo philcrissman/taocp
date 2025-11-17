@@ -223,7 +223,7 @@ RSpec.describe "MIX Address Transfer Instructions" do
       machine.memory[6] = inst_class.new(address: 1, field: 4, opcode: inst_class::JMP).to_word
 
       # HLT
-      machine.memory[7] = inst_class.new(opcode: inst_class::HLT).to_word
+      machine.memory[7] = inst_class.new(opcode: inst_class::HLT, field: 2).to_word
 
       machine.run
 
@@ -276,7 +276,7 @@ RSpec.describe "MIX Address Transfer Instructions" do
       machine.memory[9] = inst_class.new(address: 3, field: 4, opcode: inst_class::JMP).to_word
 
       # HLT
-      machine.memory[10] = inst_class.new(opcode: inst_class::HLT).to_word
+      machine.memory[10] = inst_class.new(opcode: inst_class::HLT, field: 2).to_word
 
       machine.run
 
@@ -317,7 +317,7 @@ RSpec.describe "MIX Address Transfer Instructions" do
       machine.memory[7] = inst_class.new(address: 2, field: 4, opcode: inst_class::JMP).to_word
 
       # HLT
-      machine.memory[8] = inst_class.new(opcode: inst_class::HLT).to_word
+      machine.memory[8] = inst_class.new(opcode: inst_class::HLT, field: 2).to_word
 
       machine.run
 
@@ -349,7 +349,7 @@ RSpec.describe "MIX Address Transfer Instructions" do
       machine.memory[3] = inst_class.new(address: 1, field: 6, opcode: inst_class::JMP).to_word
 
       # HLT
-      machine.memory[4] = inst_class.new(opcode: inst_class::HLT).to_word
+      machine.memory[4] = inst_class.new(opcode: inst_class::HLT, field: 2).to_word
 
       machine.run
 

@@ -328,7 +328,7 @@ RSpec.describe "MIX Instruction Execution" do
       machine.memory[0] = inst_class.new(address: 100, field: 5, opcode: inst_class::LDA).to_word  # LDA 100
       machine.memory[1] = inst_class.new(address: 101, field: 5, opcode: inst_class::ADD).to_word  # ADD 101
       machine.memory[2] = inst_class.new(address: 102, field: 5, opcode: inst_class::STA).to_word  # STA 102
-      machine.memory[3] = inst_class.new(opcode: inst_class::HLT).to_word                          # HLT
+      machine.memory[3] = inst_class.new(opcode: inst_class::HLT, field: 2).to_word                          # HLT
 
       machine.run
 
@@ -344,7 +344,7 @@ RSpec.describe "MIX Instruction Execution" do
       machine.memory[0] = inst_class.new(address: 100, field: 5, opcode: inst_class::LDA).to_word  # LDA 100
       machine.memory[1] = inst_class.new(address: 101, field: 5, opcode: inst_class::MUL).to_word  # MUL 101
       machine.memory[2] = inst_class.new(address: 102, field: 5, opcode: inst_class::STX).to_word  # STX 102 (result in X)
-      machine.memory[3] = inst_class.new(opcode: inst_class::HLT).to_word                          # HLT
+      machine.memory[3] = inst_class.new(opcode: inst_class::HLT, field: 2).to_word                          # HLT
 
       machine.run
 

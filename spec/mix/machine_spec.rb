@@ -100,7 +100,7 @@ RSpec.describe Quackers::Mix::Machine do
     describe "HLT instruction" do
       it "halts the machine" do
         # Create HLT instruction at memory[0]
-        hlt_inst = Quackers::Mix::Instruction.new(opcode: Quackers::Mix::Instruction::HLT)
+        hlt_inst = Quackers::Mix::Instruction.new(opcode: Quackers::Mix::Instruction::HLT, field: 2)
         machine.memory[0] = hlt_inst.to_word
 
         machine.step
@@ -126,7 +126,7 @@ RSpec.describe Quackers::Mix::Machine do
       it "fetches, decodes, and executes one instruction" do
         # Put two NOPs and a HLT
         nop = Quackers::Mix::Instruction.new(opcode: Quackers::Mix::Instruction::NOP).to_word
-        hlt = Quackers::Mix::Instruction.new(opcode: Quackers::Mix::Instruction::HLT).to_word
+        hlt = Quackers::Mix::Instruction.new(opcode: Quackers::Mix::Instruction::HLT, field: 2).to_word
 
         machine.memory[0] = nop
         machine.memory[1] = nop
@@ -159,7 +159,7 @@ RSpec.describe Quackers::Mix::Machine do
       it "runs until HLT" do
         # Create a simple program: 3 NOPs then HLT
         nop = Quackers::Mix::Instruction.new(opcode: Quackers::Mix::Instruction::NOP).to_word
-        hlt = Quackers::Mix::Instruction.new(opcode: Quackers::Mix::Instruction::HLT).to_word
+        hlt = Quackers::Mix::Instruction.new(opcode: Quackers::Mix::Instruction::HLT, field: 2).to_word
 
         machine.memory[0] = nop
         machine.memory[1] = nop
@@ -193,7 +193,7 @@ RSpec.describe Quackers::Mix::Machine do
 
       it "returns instruction count" do
         nop = Quackers::Mix::Instruction.new(opcode: Quackers::Mix::Instruction::NOP).to_word
-        hlt = Quackers::Mix::Instruction.new(opcode: Quackers::Mix::Instruction::HLT).to_word
+        hlt = Quackers::Mix::Instruction.new(opcode: Quackers::Mix::Instruction::HLT, field: 2).to_word
 
         machine.memory[0] = nop
         machine.memory[1] = nop

@@ -64,8 +64,18 @@ module Quackers
         case inst.opcode
         when Instruction::NOP
           execute_nop(inst)
-        when Instruction::HLT
-          execute_hlt(inst)
+        when 5  # NUM, CHAR, HLT (distinguished by field)
+          # TAOCP spec: NUM=field 0, CHAR=field 1, HLT=field 2
+          case inst.field
+          when 0
+            execute_num(inst)
+          when 1
+            execute_char(inst)
+          when 2
+            execute_hlt(inst)
+          else
+            raise Error, "Unknown field #{inst.field} for opcode 5"
+          end
         when Instruction::LDA
           execute_lda(inst)
         when Instruction::LDX
@@ -82,6 +92,22 @@ module Quackers
           execute_ld5(inst)
         when Instruction::LD6
           execute_ld6(inst)
+        when Instruction::LDAN
+          execute_ldan(inst)
+        when Instruction::LDXN
+          execute_ldxn(inst)
+        when Instruction::LD1N
+          execute_ld1n(inst)
+        when Instruction::LD2N
+          execute_ld2n(inst)
+        when Instruction::LD3N
+          execute_ld3n(inst)
+        when Instruction::LD4N
+          execute_ld4n(inst)
+        when Instruction::LD5N
+          execute_ld5n(inst)
+        when Instruction::LD6N
+          execute_ld6n(inst)
         when Instruction::STA
           execute_sta(inst)
         when Instruction::STX
@@ -146,6 +172,20 @@ module Quackers
           execute_address_transfer_i(inst, 6)
         when 55  # ENTX, ENNX, INCX, DECX (opcode for X register)
           execute_address_transfer_x(inst)
+        when 6  # Shift instructions (SLA, SRA, SLAX, SRAX, SLC, SRC)
+          execute_shift(inst)
+        when 7  # MOVE instruction
+          execute_move(inst)
+        when Instruction::JBUS
+          execute_jbus(inst)
+        when Instruction::IOC
+          execute_ioc(inst)
+        when Instruction::IN
+          execute_in(inst)
+        when Instruction::OUT
+          execute_out(inst)
+        when Instruction::JRED
+          execute_jred(inst)
         else
           raise Error, "Unknown opcode: #{inst.opcode}"
         end
@@ -158,6 +198,48 @@ module Quackers
 
       def execute_hlt(inst)
         @halted = true
+      end
+
+      # NUM - Convert character representation in rA:rX to numeric value
+      # Treats the 10 bytes as decimal digits (MIX char 30-39 = digits 0-9)
+      def execute_num(inst)
+        # Get all 10 bytes from A and X
+        bytes = @registers.a.bytes + @registers.x.bytes
+        sign = @registers.a.sign
+
+        # Convert MIX character codes to digits
+        # In MIX character set, 30-39 represent digits 0-9
+        result = 0
+        bytes.each do |byte|
+          digit = byte - 30  # Convert MIX char code to digit value
+          digit = 0 if digit < 0 || digit > 9  # Treat non-digits as 0
+          result = result * 10 + digit
+        end
+
+        # Apply sign and store in rA
+        result = sign * result
+        @registers.a = Word.from_i(result)
+      end
+
+      # CHAR - Convert numeric value in rA to character representation
+      # Stores 10 digit characters in rA:rX (using MIX chars 30-39)
+      def execute_char(inst)
+        value = @registers.a.to_i.abs  # Get absolute value
+        sign = @registers.a.sign
+
+        # Convert to 10 decimal digits
+        digits = []
+        10.times do
+          digits.unshift(value % 10)
+          value /= 10
+        end
+
+        # Convert digits to MIX character codes (30-39 for 0-9)
+        char_bytes = digits.map { |d| d + 30 }
+
+        # Store in A and X (5 bytes each)
+        @registers.a = Word.new(sign: sign, bytes: char_bytes[0..4])
+        @registers.x = Word.new(sign: sign, bytes: char_bytes[5..9])
       end
 
       # Load instructions
@@ -191,6 +273,39 @@ module Quackers
 
       def execute_ld6(inst)
         load_index_register(inst, 6)
+      end
+
+      # Load negative instructions
+      def execute_ldan(inst)
+        load_register_negative(inst, :a)
+      end
+
+      def execute_ldxn(inst)
+        load_register_negative(inst, :x)
+      end
+
+      def execute_ld1n(inst)
+        load_index_register_negative(inst, 1)
+      end
+
+      def execute_ld2n(inst)
+        load_index_register_negative(inst, 2)
+      end
+
+      def execute_ld3n(inst)
+        load_index_register_negative(inst, 3)
+      end
+
+      def execute_ld4n(inst)
+        load_index_register_negative(inst, 4)
+      end
+
+      def execute_ld5n(inst)
+        load_index_register_negative(inst, 5)
+      end
+
+      def execute_ld6n(inst)
+        load_index_register_negative(inst, 6)
       end
 
       # Helper: Load from memory into a register
@@ -227,6 +342,44 @@ module Quackers
         # Store into index register
         @registers.set_index(index_num, value)
       end
+
+      # Helper: Load negative from memory into a register
+      def load_register_negative(inst, register_name)
+        m = inst.effective_address(@registers)
+        l, r = Word.decode_field_spec(inst.field)
+
+        # Default field is (0:5) - whole word
+        l, r = 0, 5 if inst.field == 0
+
+        # Load field from memory and negate
+        value = @memory[m].slice(l, r)
+        negated = Word.new(sign: -value.sign, bytes: value.bytes.dup)
+
+        # Store into register
+        case register_name
+        when :a
+          @registers.a = negated
+        when :x
+          @registers.x = negated
+        end
+      end
+
+      # Helper: Load negative into index register
+      def load_index_register_negative(inst, index_num)
+        m = inst.effective_address(@registers)
+        l, r = Word.decode_field_spec(inst.field)
+
+        # Default field for index registers is also (0:5)
+        l, r = 0, 5 if inst.field == 0
+
+        # Load field from memory and negate
+        value = @memory[m].slice(l, r)
+        negated = Word.new(sign: -value.sign, bytes: value.bytes.dup)
+
+        # Store into index register
+        @registers.set_index(index_num, negated)
+      end
+
       # Store instructions
       def execute_sta(inst)
         store_register(inst, @registers.a)
@@ -645,6 +798,170 @@ module Quackers
           end
           @registers.set_index_i(index_num, new_value)
         end
+      end
+
+      # Shift operations
+      # Field: 0=SLA, 1=SRA, 2=SLAX, 3=SRAX, 4=SLC, 5=SRC
+      # M (address) = number of positions to shift
+      def execute_shift(inst)
+        m = inst.effective_address(@registers)
+
+        case inst.field
+        when 0  # SLA - Shift left A
+          shift_left_a(m)
+        when 1  # SRA - Shift right A
+          shift_right_a(m)
+        when 2  # SLAX - Shift left AX
+          shift_left_ax(m)
+        when 3  # SRAX - Shift right AX
+          shift_right_ax(m)
+        when 4  # SLC - Shift left circular
+          shift_left_circular(m)
+        when 5  # SRC - Shift right circular
+          shift_right_circular(m)
+        end
+      end
+
+      # Shift A left by m positions, filling with zeros
+      def shift_left_a(m)
+        bytes = @registers.a.bytes.dup
+        sign = @registers.a.sign
+
+        m = m % 5  # Only 5 bytes to shift
+        if m > 0
+          # Shift left: move bytes left, fill right with zeros
+          bytes = bytes[m..-1] + [0] * m
+        end
+
+        @registers.a = Word.new(sign: sign, bytes: bytes)
+      end
+
+      # Shift A right by m positions, filling with zeros
+      def shift_right_a(m)
+        bytes = @registers.a.bytes.dup
+        sign = @registers.a.sign
+
+        m = m % 5
+        if m > 0
+          # Shift right: move bytes right, fill left with zeros
+          bytes = [0] * m + bytes[0...(5 - m)]
+        end
+
+        @registers.a = Word.new(sign: sign, bytes: bytes)
+      end
+
+      # Shift A:X left by m positions (10 bytes total)
+      def shift_left_ax(m)
+        # Combine A and X bytes (A is high, X is low)
+        sign_a = @registers.a.sign
+        sign_x = @registers.x.sign
+        all_bytes = @registers.a.bytes + @registers.x.bytes
+
+        m = m % 10
+        if m > 0
+          all_bytes = all_bytes[m..-1] + [0] * m
+        end
+
+        @registers.a = Word.new(sign: sign_a, bytes: all_bytes[0..4])
+        @registers.x = Word.new(sign: sign_x, bytes: all_bytes[5..9])
+      end
+
+      # Shift A:X right by m positions (10 bytes total)
+      def shift_right_ax(m)
+        sign_a = @registers.a.sign
+        sign_x = @registers.x.sign
+        all_bytes = @registers.a.bytes + @registers.x.bytes
+
+        m = m % 10
+        if m > 0
+          all_bytes = [0] * m + all_bytes[0...(10 - m)]
+        end
+
+        @registers.a = Word.new(sign: sign_a, bytes: all_bytes[0..4])
+        @registers.x = Word.new(sign: sign_x, bytes: all_bytes[5..9])
+      end
+
+      # Circular shift A:X left by m positions
+      def shift_left_circular(m)
+        sign_a = @registers.a.sign
+        sign_x = @registers.x.sign
+        all_bytes = @registers.a.bytes + @registers.x.bytes
+
+        m = m % 10
+        if m > 0
+          # Rotate left: take first m bytes and move to end
+          all_bytes = all_bytes[m..-1] + all_bytes[0...m]
+        end
+
+        @registers.a = Word.new(sign: sign_a, bytes: all_bytes[0..4])
+        @registers.x = Word.new(sign: sign_x, bytes: all_bytes[5..9])
+      end
+
+      # Circular shift A:X right by m positions
+      def shift_right_circular(m)
+        sign_a = @registers.a.sign
+        sign_x = @registers.x.sign
+        all_bytes = @registers.a.bytes + @registers.x.bytes
+
+        m = m % 10
+        if m > 0
+          # Rotate right: take last m bytes and move to beginning
+          all_bytes = all_bytes[-m..-1] + all_bytes[0...(10 - m)]
+        end
+
+        @registers.a = Word.new(sign: sign_a, bytes: all_bytes[0..4])
+        @registers.x = Word.new(sign: sign_x, bytes: all_bytes[5..9])
+      end
+
+      # MOVE instruction: Move F words from M to location stored in I1
+      # After execution, I1 is increased by F
+      def execute_move(inst)
+        m = inst.effective_address(@registers)
+        f = inst.field  # Number of words to move
+        destination = @registers.get_index_i(1)
+
+        # Move F words from address M to address destination
+        f.times do |i|
+          @memory[destination + i] = @memory[m + i]
+        end
+
+        # Update I1
+        @registers.set_index_i(1, destination + f)
+      end
+
+      # I/O instruction stubs (not fully implemented)
+      # These are placeholders for future I/O device implementation
+
+      # IN - Input from device F to memory at M
+      def execute_in(inst)
+        # Stub: No-op for now
+        # Future: Transfer data from device F to memory starting at M
+      end
+
+      # OUT - Output to device F from memory at M
+      def execute_out(inst)
+        # Stub: No-op for now
+        # Future: Transfer data to device F from memory starting at M
+      end
+
+      # IOC - I/O control for device F
+      def execute_ioc(inst)
+        # Stub: No-op for now
+        # Future: Send control signal to device F
+      end
+
+      # JBUS - Jump if device F is busy
+      def execute_jbus(inst)
+        # Stub: Never jump (assume all devices are ready)
+        # Future: Check if device F is busy, jump to M if so
+      end
+
+      # JRED - Jump if device F is ready
+      def execute_jred(inst)
+        # Stub: Always jump (assume all devices are ready)
+        # Future: Check if device F is ready, jump to M if so
+        m = inst.effective_address(@registers)
+        @pc = m
       end
     end
   end

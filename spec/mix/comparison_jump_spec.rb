@@ -378,7 +378,7 @@ RSpec.describe "MIX Comparison and Jump Instructions" do
       machine.memory[1] = inst_class.new(address: 101, field: 5, opcode: inst_class::ADD).to_word
       machine.memory[2] = inst_class.new(address: 100, field: 5, opcode: inst_class::STA).to_word
       machine.memory[3] = inst_class.new(address: 0, field: 2, opcode: inst_class::JAN).to_word  # JAP
-      machine.memory[4] = inst_class.new(opcode: inst_class::HLT).to_word
+      machine.memory[4] = inst_class.new(opcode: inst_class::HLT, field: 2).to_word
 
       count = machine.run
 
@@ -418,7 +418,7 @@ RSpec.describe "MIX Comparison and Jump Instructions" do
       machine.memory[4] = inst_class.new(address: 102, field: 5, opcode: inst_class::ADD).to_word
       machine.memory[5] = inst_class.new(address: 100, field: 5, opcode: inst_class::STA).to_word
       machine.memory[6] = inst_class.new(address: 0, field: 2, opcode: inst_class::JAN).to_word  # JAP
-      machine.memory[7] = inst_class.new(opcode: inst_class::HLT).to_word
+      machine.memory[7] = inst_class.new(opcode: inst_class::HLT, field: 2).to_word
 
       machine.run
 
@@ -456,17 +456,17 @@ RSpec.describe "MIX Comparison and Jump Instructions" do
       # Less path (address 10)
       machine.memory[10] = inst_class.new(address: 150, field: 5, opcode: inst_class::LDA).to_word
       machine.memory[11] = inst_class.new(address: 200, field: 5, opcode: inst_class::STA).to_word
-      machine.memory[12] = inst_class.new(opcode: inst_class::HLT).to_word
+      machine.memory[12] = inst_class.new(opcode: inst_class::HLT, field: 2).to_word
 
       # Equal path (address 20) - won't be used
       machine.memory[20] = inst_class.new(address: 151, field: 5, opcode: inst_class::LDA).to_word
       machine.memory[21] = inst_class.new(address: 200, field: 5, opcode: inst_class::STA).to_word
-      machine.memory[22] = inst_class.new(opcode: inst_class::HLT).to_word
+      machine.memory[22] = inst_class.new(opcode: inst_class::HLT, field: 2).to_word
 
       # Greater path (address 30) - won't be used
       machine.memory[30] = inst_class.new(address: 152, field: 5, opcode: inst_class::LDA).to_word
       machine.memory[31] = inst_class.new(address: 200, field: 5, opcode: inst_class::STA).to_word
-      machine.memory[32] = inst_class.new(opcode: inst_class::HLT).to_word
+      machine.memory[32] = inst_class.new(opcode: inst_class::HLT, field: 2).to_word
 
       # Values to load
       machine.memory[150] = word_class.from_i(1)  # "less" marker

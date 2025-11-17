@@ -118,6 +118,13 @@ module Quackers
       SLC  = 6   # Shift left circular
       SRC  = 6   # Shift right circular
 
+      # I/O instructions
+      JBUS = 34  # Jump if device busy
+      IOC  = 35  # I/O control
+      IN   = 36  # Input
+      OUT  = 37  # Output
+      JRED = 38  # Jump if device ready
+
       def initialize(address: 0, index: 0, field: 0, opcode: 0, sign: 1)
         @address = address
         @index = index
