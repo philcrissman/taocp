@@ -1,6 +1,24 @@
-# Quackers
+# Quackers - MIX/MIXAL Interpreter
 
-Welcome to Quackers! A delightful Ruby gem.
+A complete implementation of Donald Knuth's MIX computer and MIXAL assembly language from "The Art of Computer Programming" (TAOCP), written in Ruby.
+
+## Features
+
+- **Complete MIX Virtual Machine** - Full implementation of the MIX computer architecture including:
+  - 4000 words of memory (5-byte words with sign)
+  - All registers: A (accumulator), X (extension), I1-I6 (index), J (jump)
+  - All instruction sets: arithmetic, comparison, jumps, shifts, I/O stubs
+  - Proper overflow handling and comparison indicators
+
+- **MIXAL Assembler** - Two-pass assembler with:
+  - Complete MIXAL syntax support
+  - Symbol table with forward references
+  - Expression evaluation (arithmetic in address fields)
+  - Literal constants (=value=)
+  - All pseudo-operations: ORIG, EQU, CON, ALF, END
+  - Comprehensive error reporting
+
+- **Command-Line Interface** - Easy-to-use CLI for assembling and running programs
 
 ## Installation
 
@@ -18,25 +36,276 @@ Or install it yourself as:
 
     $ gem install quackers
 
-## Usage
+## Quick Start
+
+### Command Line Usage
+
+The `mix` command provides three modes of operation:
+
+```bash
+# Assemble a MIXAL program
+$ mix assemble examples/factorial.mixal
+
+# Run an assembled program
+$ mix run factorial.mix
+
+# Assemble and run in one step
+$ mix exec examples/factorial.mixal
+```
+
+### Example Program
+
+Here's a simple MIXAL program that calculates 6! (factorial of 6):
+
+```mixal
+* Calculate factorial of 6 (result = 720)
+        ORIG 0
+START   ENTA 6
+        STA  N
+        ENTA 1
+        STA  RESULT
+LOOP    LDA  RESULT
+        MUL  N
+        STX  RESULT     Product goes to rX
+        LDA  N
+        DECA 1
+        STA  N
+        CMPA =0=
+        JG   LOOP
+        HLT
+N       CON  0
+RESULT  CON  0
+        END  START
+```
+
+Save as `factorial.mixal` and run:
+
+```bash
+$ mix exec factorial.mixal
+Assembling factorial.mixal...
+  Start address: 0
+Running...
+✓ Halted after 53 instructions
+
+Final registers:
+  A  = 0
+  X  = 720
+  ...
+```
+
+## Programming with MIX/MIXAL
+
+### MIX Architecture
+
+The MIX computer is a hypothetical computer used throughout TAOCP. Key features:
+
+- **Memory**: 4000 words (addresses 0-3999)
+- **Word Size**: 1 sign bit + 5 bytes (each byte is 0-63, not 0-255!)
+- **Registers**:
+  - A: Accumulator (5 bytes + sign)
+  - X: Extension register (5 bytes + sign)
+  - I1-I6: Index registers (2 bytes + sign)
+  - J: Jump register (2 bytes, always positive)
+
+### MIXAL Syntax
+
+MIXAL (MIX Assembly Language) uses a line-based format:
+
+```
+[LABEL]  OPERATION  [ADDRESS][,INDEX][(FIELD)]  [COMMENT]
+```
+
+Examples:
+
+```mixal
+START   LDA   1000          Load from address 1000
+        STA   2000,1        Store to 2000 + I1
+        LDA   VALUE(1:3)    Load bytes 1-3 from VALUE
+LOOP    JMP   START         Jump to START
+VALUE   CON   42            Constant value 42
+TEXT    ALF   HELLO         5-character string
+SIZE    EQU   100           Define constant
+```
+
+### Instruction Set
+
+**Arithmetic**:
+- `LDA`, `LDX`, `LD1`-`LD6` - Load
+- `STA`, `STX`, `ST1`-`ST6` - Store
+- `ADD`, `SUB`, `MUL`, `DIV` - Arithmetic
+- `INCA`, `DECA`, `ENTA`, `ENNA` - Address transfer
+
+**Comparison and Jumps**:
+- `CMPA`, `CMPX`, `CMP1`-`CMP6` - Compare
+- `JMP`, `JL`, `JE`, `JG`, `JLE`, `JNE`, `JGE` - Unconditional/conditional jumps
+- `JAN`, `JAZ`, `JAP`, `JANN`, `JANZ`, `JANP` - Jump on A register
+- `J1N`-`J6N`, `JXN` (and Z, P, NN, NZ, NP variants) - Jump on index/X
+
+**Shift and Special**:
+- `SLA`, `SRA`, `SLAX`, `SRAX` - Shift left/right
+- `SLC`, `SRC` - Circular shift
+- `NUM`, `CHAR` - Numeric conversion
+- `HLT` - Halt
+- `NOP` - No operation
+
+**Pseudo-Operations**:
+- `ORIG` - Set location counter
+- `EQU` - Define symbol
+- `CON` - Define constant
+- `ALF` - Define alphanumeric constant (5 chars)
+- `END` - End of program (with optional start address)
+
+## Ruby API
+
+You can also use MIX/MIXAL directly from Ruby:
 
 ```ruby
 require 'quackers'
 
-Quackers.quack
-# => "Quack! Quack!"
+# Assemble a program
+assembler = Quackers::Mixal::Assembler.new
+assembler.assemble(source_code)
+
+# Create and run MIX machine
+machine = Quackers::Mix::Machine.new
+
+# Load assembled code
+assembler.memory.each_with_index do |word, addr|
+  machine.memory[addr] = word
+end
+machine.pc = assembler.start_address || 0
+
+# Execute
+machine.run
+
+# Check results
+puts "A register: #{machine.registers.a.to_i}"
+puts "X register: #{machine.registers.x.to_i}"
 ```
+
+### Working with MIX Words
+
+```ruby
+# Create a word from an integer
+word = Quackers::Mix::Word.from_i(12345)
+
+# Access components
+word.sign    # => 1 (positive)
+word.bytes   # => [0, 0, 48, 57, 57]
+
+# Convert back to integer
+word.to_i    # => 12345
+
+# Field specifications
+word = Quackers::Mix::Word.new(sign: 1, bytes: [1, 2, 3, 4, 5])
+word.get_field(1, 3)  # Get bytes 1-3
+```
+
+### Working with Instructions
+
+```ruby
+# Create an instruction
+inst = Quackers::Mix::Instruction.new(
+  address: 1000,
+  index: 1,
+  field: 5,
+  opcode: Quackers::Mix::Instruction::LDA
+)
+
+# Convert to/from word
+word = inst.to_word
+inst2 = Quackers::Mix::Instruction.from_word(word)
+```
+
+## Examples
+
+The `examples/` directory contains several example programs:
+
+- `factorial.mixal` - Calculate factorial
+- More examples coming soon!
+
+## Testing
+
+The project includes comprehensive test coverage (346 tests):
+
+```bash
+$ rspec
+```
+
+Test suites include:
+- Unit tests for all MIX components (Word, Instruction, Memory, Registers)
+- Integration tests for all instruction types
+- MIXAL lexer and parser tests
+- Assembler tests
+- **TAOCP example programs** - Real programs from Knuth's books
+
+## Architecture
+
+The implementation follows a clean separation:
+
+```
+lib/quackers/
+├── mix/                    # MIX Virtual Machine
+│   ├── word.rb            # 5-byte word with sign
+│   ├── instruction.rb     # Instruction encoding/decoding
+│   ├── memory.rb          # 4000-word memory
+│   ├── registers.rb       # A, X, I1-I6, J registers
+│   ├── machine.rb         # VM execution engine
+│   └── character.rb       # MIX character encoding
+└── mixal/                  # MIXAL Assembler
+    ├── lexer.rb           # Tokenization
+    ├── parser.rb          # AST generation
+    ├── symbol_table.rb    # Symbol resolution
+    └── assembler.rb       # Two-pass assembly
+```
+
+### Implementation Details
+
+- **Base-64 Arithmetic**: MIX uses base-64 bytes (0-63), not binary bytes (0-255)
+- **Sign-Magnitude**: Numbers use sign-magnitude representation, not two's complement
+- **Field Specifications**: Instructions can operate on partial words using (L:R) notation
+- **Two-Pass Assembly**: First pass builds symbol table, second pass generates code
+- **Literal Pool**: Literals (=value=) are automatically collected and placed at program end
+
+## Differences from Knuth's MIX
+
+This implementation is faithful to TAOCP with these notes:
+
+- **I/O Devices**: I/O instructions (`IN`, `OUT`, `IOC`, `JBUS`, `JRED`) are stubs
+- **Character Set**: Uses a simplified MIX character encoding (A=1, B=2, etc.)
+- **Tape/Disk**: No tape or disk unit simulation
+- **Timing**: Instruction execution is not cycle-accurate
+
+## Resources
+
+- [TAOCP Volume 1](https://www-cs-faculty.stanford.edu/~knuth/taocp.html) - The definitive reference
+- [MIX Specification](https://en.wikipedia.org/wiki/MIX) - Wikipedia overview
+- [MIXAL Reference](https://www.gnu.org/software/mdk/manual/) - GNU MDK documentation
 
 ## Development
 
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
+After checking out the repo:
 
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and the created tag, and push the `.gem` file to [rubygems.org](https://rubygems.org).
+```bash
+$ bin/setup              # Install dependencies
+$ rake spec              # Run tests
+$ bin/console            # Interactive prompt
+```
 
 ## Contributing
 
 Bug reports and pull requests are welcome on GitHub at https://github.com/philcrissman/quack.
 
+Contributions are especially welcome for:
+- More example programs from TAOCP
+- I/O device simulation
+- Debugger/step-through mode
+- Performance improvements
+
 ## License
 
 The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
+
+## Acknowledgments
+
+This implementation is based on Donald Knuth's MIX computer description in "The Art of Computer Programming" (TAOCP). MIX is a pedagogical tool designed to teach fundamental computer architecture concepts.

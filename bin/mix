@@ -32,14 +32,145 @@ command = ARGV[0]
 
 case command
 when "assemble"
-  puts "Assembler not yet implemented"
-  exit 1
+  if ARGV.length < 2
+    puts "Error: No input file specified"
+    puts "Usage: mix assemble <file.mixal> [-o output]"
+    exit 1
+  end
+
+  input_file = ARGV[1]
+  unless File.exist?(input_file)
+    puts "Error: File not found: #{input_file}"
+    exit 1
+  end
+
+  # Read source
+  source = File.read(input_file)
+
+  # Assemble
+  begin
+    assembler = Quackers::Mixal::Assembler.new
+    assembler.assemble(source)
+
+    # Get output filename
+    output_file = nil
+    if idx = ARGV.index("-o")
+      output_file = ARGV[idx + 1]
+    else
+      output_file = input_file.sub(/\.mixal$/i, ".mix")
+    end
+
+    # Save assembled program (marshal the memory)
+    File.open(output_file, "wb") do |f|
+      Marshal.dump({
+        memory: assembler.memory,
+        start_address: assembler.start_address,
+        symbols: assembler.symbol_table
+      }, f)
+    end
+
+    puts "✓ Assembled #{input_file} -> #{output_file}"
+    puts "  Start address: #{assembler.start_address || 0}"
+    puts "  Symbol count: #{assembler.symbol_table.all_symbols.size}"
+  rescue Quackers::Mixal::Error => e
+    puts "Assembly error: #{e.message}"
+    exit 1
+  end
+
 when "run"
-  puts "VM not yet implemented"
-  exit 1
+  if ARGV.length < 2
+    puts "Error: No input file specified"
+    puts "Usage: mix run <file.mix>"
+    exit 1
+  end
+
+  input_file = ARGV[1]
+  unless File.exist?(input_file)
+    puts "Error: File not found: #{input_file}"
+    exit 1
+  end
+
+  # Load assembled program
+  begin
+    data = File.open(input_file, "rb") { |f| Marshal.load(f) }
+
+    # Create machine and load program
+    machine = Quackers::Mix::Machine.new
+    (0...4000).each do |addr|
+      machine.memory[addr] = data[:memory][addr]
+    end
+    machine.pc = data[:start_address] || 0
+
+    # Run
+    puts "Running #{input_file}..."
+    inst_count = machine.run
+    puts "✓ Halted after #{inst_count} instructions"
+
+    # Show final state
+    puts "\nFinal registers:"
+    puts "  A  = #{machine.registers.a.to_i}"
+    puts "  X  = #{machine.registers.x.to_i}"
+    puts "  I1 = #{machine.registers.get_index_i(1)}"
+    puts "  I2 = #{machine.registers.get_index_i(2)}"
+    puts "  I3 = #{machine.registers.get_index_i(3)}"
+  rescue Quackers::Mix::Error => e
+    puts "Runtime error: #{e.message}"
+    exit 1
+  end
+
 when "exec"
-  puts "Exec not yet implemented"
-  exit 1
+  if ARGV.length < 2
+    puts "Error: No input file specified"
+    puts "Usage: mix exec <file.mixal>"
+    exit 1
+  end
+
+  input_file = ARGV[1]
+  unless File.exist?(input_file)
+    puts "Error: File not found: #{input_file}"
+    exit 1
+  end
+
+  # Read and assemble
+  source = File.read(input_file)
+  begin
+    assembler = Quackers::Mixal::Assembler.new
+    assembler.assemble(source)
+
+    puts "Assembling #{input_file}..."
+    puts "  Start address: #{assembler.start_address || 0}"
+
+    # Create machine and load program
+    machine = Quackers::Mix::Machine.new
+    (0...4000).each do |addr|
+      machine.memory[addr] = assembler.memory[addr]
+    end
+    machine.pc = assembler.start_address || 0
+
+    # Run
+    puts "Running..."
+    inst_count = machine.run
+    puts "✓ Halted after #{inst_count} instructions"
+
+    # Show final state
+    puts "\nFinal registers:"
+    puts "  A  = #{machine.registers.a.to_i}"
+    puts "  X  = #{machine.registers.x.to_i}"
+    puts "  I1 = #{machine.registers.get_index_i(1)}"
+    puts "  I2 = #{machine.registers.get_index_i(2)}"
+    puts "  I3 = #{machine.registers.get_index_i(3)}"
+    puts "  I4 = #{machine.registers.get_index_i(4)}"
+    puts "  I5 = #{machine.registers.get_index_i(5)}"
+    puts "  I6 = #{machine.registers.get_index_i(6)}"
+    puts "  J  = #{machine.registers.j}"
+  rescue Quackers::Mixal::Error => e
+    puts "Assembly error: #{e.message}"
+    exit 1
+  rescue Quackers::Mix::Error => e
+    puts "Runtime error: #{e.message}"
+    exit 1
+  end
+
 else
   puts "Unknown command: #{command}"
   puts "Run 'mix --help' for usage information"

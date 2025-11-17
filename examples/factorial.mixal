@@ -1,0 +1,18 @@
+* Calculate factorial of 6 (result = 720)
+        ORIG 0
+START   ENTA 6
+        STA  N
+        ENTA 1
+        STA  RESULT
+LOOP    LDA  RESULT
+        MUL  N
+        STX  RESULT     Product goes to rX, store it
+        LDA  N
+        DECA 1
+        STA  N
+        CMPA =0=
+        JG   LOOP
+        HLT
+N       CON  0
+RESULT  CON  0
+        END  START
