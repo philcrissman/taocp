@@ -130,6 +130,22 @@ module Quackers
           execute_jmp(inst)
         when Instruction::JAN
           execute_jan(inst)
+        when 48  # ENTA, ENNA, INCA, DECA (opcode for A register)
+          execute_address_transfer_a(inst)
+        when 49  # ENT1, ENN1, INC1, DEC1
+          execute_address_transfer_i(inst, 1)
+        when 50  # ENT2, ENN2, INC2, DEC2
+          execute_address_transfer_i(inst, 2)
+        when 51  # ENT3, ENN3, INC3, DEC3
+          execute_address_transfer_i(inst, 3)
+        when 52  # ENT4, ENN4, INC4, DEC4
+          execute_address_transfer_i(inst, 4)
+        when 53  # ENT5, ENN5, INC5, DEC5
+          execute_address_transfer_i(inst, 5)
+        when 54  # ENT6, ENN6, INC6, DEC6
+          execute_address_transfer_i(inst, 6)
+        when 55  # ENTX, ENNX, INCX, DECX (opcode for X register)
+          execute_address_transfer_x(inst)
         else
           raise Error, "Unknown opcode: #{inst.opcode}"
         end
@@ -536,6 +552,98 @@ module Quackers
             @registers.j = @pc
             @pc = m
           end
+        end
+      end
+
+      # Address transfer operations for A register
+      # Field: 0=ENTA, 1=ENNA, 2=INCA, 3=DECA
+      def execute_address_transfer_a(inst)
+        m = inst.effective_address(@registers)
+
+        case inst.field
+        when 0  # ENTA - Enter A
+          @registers.a = Word.from_i(m)
+        when 1  # ENNA - Enter negative A
+          @registers.a = Word.from_i(-m)
+        when 2  # INCA - Increase A
+          new_value = @registers.a.to_i + m
+          # Check overflow
+          if new_value.abs > Word::MAX_VALUE
+            @registers.overflow = true
+            sign = new_value < 0 ? -1 : 1
+            new_value = sign * (new_value.abs % (Word::MAX_VALUE + 1))
+          end
+          @registers.a = Word.from_i(new_value)
+        when 3  # DECA - Decrease A
+          new_value = @registers.a.to_i - m
+          # Check overflow
+          if new_value.abs > Word::MAX_VALUE
+            @registers.overflow = true
+            sign = new_value < 0 ? -1 : 1
+            new_value = sign * (new_value.abs % (Word::MAX_VALUE + 1))
+          end
+          @registers.a = Word.from_i(new_value)
+        end
+      end
+
+      # Address transfer operations for X register
+      # Field: 0=ENTX, 1=ENNX, 2=INCX, 3=DECX
+      def execute_address_transfer_x(inst)
+        m = inst.effective_address(@registers)
+
+        case inst.field
+        when 0  # ENTX - Enter X
+          @registers.x = Word.from_i(m)
+        when 1  # ENNX - Enter negative X
+          @registers.x = Word.from_i(-m)
+        when 2  # INCX - Increase X
+          new_value = @registers.x.to_i + m
+          if new_value.abs > Word::MAX_VALUE
+            @registers.overflow = true
+            sign = new_value < 0 ? -1 : 1
+            new_value = sign * (new_value.abs % (Word::MAX_VALUE + 1))
+          end
+          @registers.x = Word.from_i(new_value)
+        when 3  # DECX - Decrease X
+          new_value = @registers.x.to_i - m
+          if new_value.abs > Word::MAX_VALUE
+            @registers.overflow = true
+            sign = new_value < 0 ? -1 : 1
+            new_value = sign * (new_value.abs % (Word::MAX_VALUE + 1))
+          end
+          @registers.x = Word.from_i(new_value)
+        end
+      end
+
+      # Address transfer operations for index registers
+      # Field: 0=ENTi, 1=ENNi, 2=INCi, 3=DECi
+      def execute_address_transfer_i(inst, index_num)
+        m = inst.effective_address(@registers)
+
+        case inst.field
+        when 0  # ENTi - Enter index
+          @registers.set_index_i(index_num, m)
+        when 1  # ENNi - Enter negative index
+          @registers.set_index_i(index_num, -m)
+        when 2  # INCi - Increase index
+          current = @registers.get_index_i(index_num)
+          new_value = current + m
+          # Index registers have 2-byte capacity (max 4095)
+          if new_value.abs > 4095
+            @registers.overflow = true
+            sign = new_value < 0 ? -1 : 1
+            new_value = sign * (new_value.abs % 4096)
+          end
+          @registers.set_index_i(index_num, new_value)
+        when 3  # DECi - Decrease index
+          current = @registers.get_index_i(index_num)
+          new_value = current - m
+          if new_value.abs > 4095
+            @registers.overflow = true
+            sign = new_value < 0 ? -1 : 1
+            new_value = sign * (new_value.abs % 4096)
+          end
+          @registers.set_index_i(index_num, new_value)
         end
       end
     end
