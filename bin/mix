@@ -1,0 +1,47 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "bundler/setup"
+require_relative "../lib/quackers"
+
+# CLI entrypoint for MIX/MIXAL interpreter
+# Usage:
+#   mix assemble input.mixal -o output.mix
+#   mix run program.mix
+#   mix exec program.mixal
+
+if ARGV.empty? || ARGV.include?("--help") || ARGV.include?("-h")
+  puts <<~HELP
+    MIX/MIXAL Interpreter - Part of the Quackers gem
+
+    Usage:
+      mix assemble <file.mixal> [-o output]  Assemble MIXAL to binary
+      mix run <file.mix>                     Run assembled MIX program
+      mix exec <file.mixal>                  Assemble and run MIXAL program
+      mix --help                             Show this help
+
+    Examples:
+      mix assemble hello.mixal -o hello.mix
+      mix run hello.mix
+      mix exec hello.mixal
+  HELP
+  exit 0
+end
+
+command = ARGV[0]
+
+case command
+when "assemble"
+  puts "Assembler not yet implemented"
+  exit 1
+when "run"
+  puts "VM not yet implemented"
+  exit 1
+when "exec"
+  puts "Exec not yet implemented"
+  exit 1
+else
+  puts "Unknown command: #{command}"
+  puts "Run 'mix --help' for usage information"
+  exit 1
+end
