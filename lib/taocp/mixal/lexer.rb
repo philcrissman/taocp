@@ -51,7 +51,6 @@ module Taocp
         col = 1
         label = nil
         operation = nil
-        address_part = nil
 
         # Determine if first token is a label or operation
         if parts.length > 0
