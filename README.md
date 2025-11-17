@@ -1,6 +1,34 @@
-# Quackers - MIX/MIXAL Interpreter
+# TAOCP - MIX/MIXAL Interpreter
 
-A complete implementation of Donald Knuth's MIX computer and MIXAL assembly language from "The Art of Computer Programming" (TAOCP), written in Ruby.
+A complete Ruby implementation of **MIX**, the mythical computer created by Donald Knuth for his landmark series "The Art of Computer Programming" (TAOCP), along with its assembly language **MIXAL**.
+
+## What is MIX?
+
+[MIX](https://en.wikipedia.org/wiki/MIX_(abstract_machine)) is a hypothetical computer designed by Donald Knuth in the 1960s as a pedagogical tool for teaching fundamental computer science concepts. It appears throughout TAOCP to illustrate algorithms in a machine-independent but concrete way.
+
+**Key characteristics:**
+- Base-64 arithmetic (not binary!)
+- Sign-magnitude representation
+- Word-addressed memory (not byte-addressed)
+- Simple, elegant instruction set
+- Designed to be easy to understand while still being realistic
+
+MIX is intentionally old-fashioned, representing computers of the 1960s era. Knuth later created [MMIX](https://en.wikipedia.org/wiki/MMIX), a more modern 64-bit RISC architecture, but MIX remains the primary machine for TAOCP Volumes 1-3.
+
+**Why would you use this gem?**
+- Study algorithms from TAOCP in their original form
+- Learn computer architecture fundamentals
+- Understand how assembly language and virtual machines work
+- Run and experiment with classic algorithms
+- Educational purposes and computer science history
+
+## Resources
+
+- [The Art of Computer Programming](https://www-cs-faculty.stanford.edu/~knuth/taocp.html) - Knuth's official TAOCP site
+- [MIX on Wikipedia](https://en.wikipedia.org/wiki/MIX_(abstract_machine)) - Comprehensive overview of MIX architecture
+- [TAOCP Volume 1](https://www-cs-faculty.stanford.edu/~knuth/taocp.html) - Fundamental Algorithms (where MIX is introduced)
+- [GNU MDK](https://www.gnu.org/software/mdk/manual/) - Alternative MIX implementation with MIXAL reference
+- [Donald Knuth](https://en.wikipedia.org/wiki/Donald_Knuth) - About the creator of TeX, METAFONT, and TAOCP
 
 ## Features
 
@@ -244,7 +272,7 @@ Test suites include:
 The implementation follows a clean separation:
 
 ```
-lib/quackers/
+lib/taocp/
 ├── mix/                    # MIX Virtual Machine
 │   ├── word.rb            # 5-byte word with sign
 │   ├── instruction.rb     # Instruction encoding/decoding
@@ -275,12 +303,6 @@ This implementation is faithful to TAOCP with these notes:
 - **Character Set**: Uses a simplified MIX character encoding (A=1, B=2, etc.)
 - **Tape/Disk**: No tape or disk unit simulation
 - **Timing**: Instruction execution is not cycle-accurate
-
-## Resources
-
-- [TAOCP Volume 1](https://www-cs-faculty.stanford.edu/~knuth/taocp.html) - The definitive reference
-- [MIX Specification](https://en.wikipedia.org/wiki/MIX) - Wikipedia overview
-- [MIXAL Reference](https://www.gnu.org/software/mdk/manual/) - GNU MDK documentation
 
 ## Development
 
