@@ -1,133 +1,128 @@
 # frozen_string_literal: true
 
-RSpec.describe Taocp::Mixal::SymbolTable do
-  let(:symbol_table) { Taocp::Mixal::SymbolTable.new }
+require "test_helper"
 
-  describe "symbol definition" do
-    it "defines a symbol" do
-      symbol_table.define("START", 1000)
-      expect(symbol_table.lookup("START")).to eq(1000)
-    end
+class MixalSymbolTableTest < Minitest::Test
+  def setup
+    @symbol_table = Taocp::Mixal::SymbolTable.new
+  end
 
-    it "is case-insensitive" do
-      symbol_table.define("start", 1000)
-      expect(symbol_table.lookup("START")).to eq(1000)
-      expect(symbol_table.lookup("Start")).to eq(1000)
-    end
+  # Symbol definition tests
+  def test_defines_a_symbol
+    @symbol_table.define("START", 1000)
+    assert_equal 1000, @symbol_table.lookup("START")
+  end
 
-    it "raises error on duplicate definition" do
-      symbol_table.define("LABEL", 100)
-      expect {
-        symbol_table.define("LABEL", 200)
-      }.to raise_error(Taocp::Mixal::SymbolTable::Error, /already defined/)
-    end
+  def test_is_case_insensitive
+    @symbol_table.define("start", 1000)
+    assert_equal 1000, @symbol_table.lookup("START")
+    assert_equal 1000, @symbol_table.lookup("Start")
+  end
 
-    it "checks if symbol is defined" do
-      symbol_table.define("TEST", 500)
-      expect(symbol_table.defined?("TEST")).to be true
-      expect(symbol_table.defined?("UNDEFINED")).to be false
+  def test_raises_error_on_duplicate_definition
+    @symbol_table.define("LABEL", 100)
+    assert_raises(Taocp::Mixal::SymbolTable::Error, /already defined/) do
+      @symbol_table.define("LABEL", 200)
     end
   end
 
-  describe "symbol lookup" do
-    it "returns nil for undefined symbol" do
-      expect(symbol_table.lookup("UNDEFINED")).to be_nil
-    end
+  def test_checks_if_symbol_is_defined
+    @symbol_table.define("TEST", 500)
+    assert @symbol_table.defined?("TEST")
+    refute @symbol_table.defined?("UNDEFINED")
+  end
 
-    it "returns defined value" do
-      symbol_table.define("VALUE", 42)
-      expect(symbol_table.lookup("VALUE")).to eq(42)
+  # Symbol lookup tests
+  def test_returns_nil_for_undefined_symbol
+    assert_nil @symbol_table.lookup("UNDEFINED")
+  end
+
+  def test_returns_defined_value
+    @symbol_table.define("VALUE", 42)
+    assert_equal 42, @symbol_table.lookup("VALUE")
+  end
+
+  # Expression evaluation tests
+  def test_evaluates_integer_directly
+    @symbol_table.define("START", 1000)
+    assert_equal 500, @symbol_table.evaluate(500)
+  end
+
+  def test_evaluates_string_integer
+    assert_equal 500, @symbol_table.evaluate("500")
+  end
+
+  def test_evaluates_negative_integer
+    assert_equal(-50, @symbol_table.evaluate("-50"))
+  end
+
+  def test_evaluates_simple_symbol
+    @symbol_table.define("START", 1000)
+    assert_equal 1000, @symbol_table.evaluate("START")
+  end
+
+  def test_evaluates_symbol_plus_number
+    @symbol_table.define("START", 1000)
+    assert_equal 1010, @symbol_table.evaluate("START+10")
+  end
+
+  def test_evaluates_symbol_minus_number
+    @symbol_table.define("END", 2000)
+    assert_equal 1995, @symbol_table.evaluate("END-5")
+  end
+
+  def test_raises_error_for_undefined_symbol
+    assert_raises(Taocp::Mixal::SymbolTable::Error, /Undefined symbol/) do
+      @symbol_table.evaluate("UNDEFINED")
     end
   end
 
-  describe "expression evaluation" do
-    before do
-      symbol_table.define("START", 1000)
-      symbol_table.define("END", 2000)
-      symbol_table.define("SIZE", 100)
-    end
-
-    it "evaluates integer directly" do
-      expect(symbol_table.evaluate(500)).to eq(500)
-    end
-
-    it "evaluates string integer" do
-      expect(symbol_table.evaluate("500")).to eq(500)
-    end
-
-    it "evaluates negative integer" do
-      expect(symbol_table.evaluate("-50")).to eq(-50)
-    end
-
-    it "evaluates simple symbol" do
-      expect(symbol_table.evaluate("START")).to eq(1000)
-    end
-
-    it "evaluates symbol + number" do
-      expect(symbol_table.evaluate("START+10")).to eq(1010)
-    end
-
-    it "evaluates symbol - number" do
-      expect(symbol_table.evaluate("END-5")).to eq(1995)
-    end
-
-    it "raises error for undefined symbol" do
-      expect {
-        symbol_table.evaluate("UNDEFINED")
-      }.to raise_error(Taocp::Mixal::SymbolTable::Error, /Undefined symbol/)
-    end
-
-    it "raises error for undefined symbol in expression" do
-      expect {
-        symbol_table.evaluate("UNDEFINED+10")
-      }.to raise_error(Taocp::Mixal::SymbolTable::Error, /Undefined symbol/)
+  def test_raises_error_for_undefined_symbol_in_expression
+    assert_raises(Taocp::Mixal::SymbolTable::Error, /Undefined symbol/) do
+      @symbol_table.evaluate("UNDEFINED+10")
     end
   end
 
-  describe "current address evaluation" do
-    before do
-      symbol_table.define("LOOP", 500)
-    end
-
-    it "evaluates * as current location" do
-      expect(symbol_table.evaluate_with_location("*", 100)).to eq(100)
-    end
-
-    it "evaluates *+N" do
-      expect(symbol_table.evaluate_with_location("*+2", 100)).to eq(102)
-    end
-
-    it "evaluates *-N" do
-      expect(symbol_table.evaluate_with_location("*-5", 100)).to eq(95)
-    end
-
-    it "evaluates symbol with location context" do
-      expect(symbol_table.evaluate_with_location("LOOP", 100)).to eq(500)
-    end
-
-    it "evaluates symbol+N with location context" do
-      expect(symbol_table.evaluate_with_location("LOOP+10", 100)).to eq(510)
-    end
+  # Current address evaluation tests
+  def test_evaluates_asterisk_as_current_location
+    assert_equal 100, @symbol_table.evaluate_with_location("*", 100)
   end
 
-  describe "all symbols" do
-    it "returns all defined symbols" do
-      symbol_table.define("A", 1)
-      symbol_table.define("B", 2)
-      symbol_table.define("C", 3)
+  def test_evaluates_asterisk_plus_n
+    assert_equal 102, @symbol_table.evaluate_with_location("*+2", 100)
+  end
 
-      all = symbol_table.all
-      expect(all["A"]).to eq(1)
-      expect(all["B"]).to eq(2)
-      expect(all["C"]).to eq(3)
-    end
+  def test_evaluates_asterisk_minus_n
+    assert_equal 95, @symbol_table.evaluate_with_location("*-5", 100)
+  end
 
-    it "returns a copy (not modifiable)" do
-      symbol_table.define("TEST", 100)
-      all = symbol_table.all
-      all["TEST"] = 999
+  def test_evaluates_symbol_with_location_context
+    @symbol_table.define("LOOP", 500)
+    assert_equal 500, @symbol_table.evaluate_with_location("LOOP", 100)
+  end
 
-      expect(symbol_table.lookup("TEST")).to eq(100)
-    end
+  def test_evaluates_symbol_plus_n_with_location_context
+    @symbol_table.define("LOOP", 500)
+    assert_equal 510, @symbol_table.evaluate_with_location("LOOP+10", 100)
+  end
+
+  # All symbols tests
+  def test_returns_all_defined_symbols
+    @symbol_table.define("A", 1)
+    @symbol_table.define("B", 2)
+    @symbol_table.define("C", 3)
+
+    all = @symbol_table.all
+    assert_equal 1, all["A"]
+    assert_equal 2, all["B"]
+    assert_equal 3, all["C"]
+  end
+
+  def test_returns_a_copy_not_modifiable
+    @symbol_table.define("TEST", 100)
+    all = @symbol_table.all
+    all["TEST"] = 999
+
+    assert_equal 100, @symbol_table.lookup("TEST")
   end
 end

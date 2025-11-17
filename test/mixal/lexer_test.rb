@@ -1,348 +1,382 @@
 # frozen_string_literal: true
 
-RSpec.describe Taocp::Mixal::Lexer do
-  let(:lexer_class) { Taocp::Mixal::Lexer }
+require "test_helper"
 
-  describe "basic tokenization" do
-    it "tokenizes a simple instruction" do
-      source = "LDA 1000"
-      tokens = lexer_class.tokenize(source)
+class MixalLexerTest < Minitest::Test
+  def setup
+    @lexer_class = Taocp::Mixal::Lexer
+  end
 
-      expect(tokens.length).to eq(2)
-      expect(tokens[0].type).to eq(:operation)
-      expect(tokens[0].value).to eq("LDA")
-      expect(tokens[1].type).to eq(:number)
-      expect(tokens[1].value).to eq(1000)
-    end
+  # Basic tokenization tests
+  def test_tokenizes_a_simple_instruction
+    source = "LDA 1000"
+    tokens = @lexer_class.tokenize(source)
 
-    it "tokenizes instruction with label" do
-      source = "START LDA 2000"
-      tokens = lexer_class.tokenize(source)
+    assert_equal 2, tokens.length
+    assert_equal :operation, tokens[0].type
+    assert_equal "LDA", tokens[0].value
+    assert_equal :number, tokens[1].type
+    assert_equal 1000, tokens[1].value
+  end
 
-      expect(tokens.length).to eq(3)
-      expect(tokens[0].type).to eq(:label)
-      expect(tokens[0].value).to eq("START")
-      expect(tokens[1].type).to eq(:operation)
-      expect(tokens[1].value).to eq("LDA")
-      expect(tokens[2].type).to eq(:number)
-      expect(tokens[2].value).to eq(2000)
-    end
+  def test_tokenizes_instruction_with_label
+    source = "START LDA 2000"
+    tokens = @lexer_class.tokenize(source)
 
-    it "tokenizes empty lines" do
-      source = "\n\n"
-      tokens = lexer_class.tokenize(source)
+    assert_equal 3, tokens.length
+    assert_equal :label, tokens[0].type
+    assert_equal "START", tokens[0].value
+    assert_equal :operation, tokens[1].type
+    assert_equal "LDA", tokens[1].value
+    assert_equal :number, tokens[2].type
+    assert_equal 2000, tokens[2].value
+  end
 
-      expect(tokens.length).to eq(0)
-    end
+  def test_tokenizes_empty_lines
+    source = "\n\n"
+    tokens = @lexer_class.tokenize(source)
 
-    it "tokenizes full-line comments" do
-      source = "* This is a comment"
-      tokens = lexer_class.tokenize(source)
+    assert_equal 0, tokens.length
+  end
 
-      expect(tokens.length).to eq(1)
-      expect(tokens[0].type).to eq(:comment)
-      expect(tokens[0].value).to eq("* This is a comment")
+  def test_tokenizes_full_line_comments
+    source = "* This is a comment"
+    tokens = @lexer_class.tokenize(source)
+
+    assert_equal 1, tokens.length
+    assert_equal :comment, tokens[0].type
+    assert_equal "* This is a comment", tokens[0].value
+  end
+
+  # Address field tokenization tests
+  def test_tokenizes_instruction_with_index
+    source = "LDA 1000,1"
+    tokens = @lexer_class.tokenize(source)
+
+    types = tokens.map(&:type)
+    assert_includes types, :operation
+    assert_includes types, :number
+    assert_includes types, :comma
+    assert_includes types, :index
+    assert_equal "1", tokens.find { |t| t.type == :index }.value
+  end
+
+  def test_tokenizes_instruction_with_field_specification
+    source = "LDA 1000(1:5)"
+    tokens = @lexer_class.tokenize(source)
+
+    types = tokens.map(&:type)
+    # No comma because there's no index - just address with field spec
+    assert_includes types, :operation
+    assert_includes types, :number
+    assert_includes types, :lparen
+    assert_includes types, :colon
+    assert_includes types, :rparen
+    refute_includes types, :comma
+  end
+
+  def test_tokenizes_instruction_with_index_and_field
+    source = "LDA 1000,1(2:4)"
+    tokens = @lexer_class.tokenize(source)
+
+    types = tokens.map(&:type)
+    assert_includes types, :operation
+    assert_includes types, :number
+    assert_includes types, :comma
+    assert_includes types, :index
+    assert_includes types, :lparen
+    assert_includes types, :colon
+    assert_includes types, :rparen
+  end
+
+  def test_tokenizes_symbolic_address
+    source = "JMP LOOP"
+    tokens = @lexer_class.tokenize(source)
+
+    assert_equal 2, tokens.length
+    assert_equal :operation, tokens[0].type
+    assert_equal :symbol, tokens[1].type
+    assert_equal "LOOP", tokens[1].value
+  end
+
+  # Expression tokenization tests
+  def test_tokenizes_addition_expression
+    source = "LDA START+10"
+    tokens = @lexer_class.tokenize(source)
+
+    types = tokens.map(&:type)
+    assert_includes types, :operation
+    assert_includes types, :symbol
+    assert_includes types, :plus
+    assert_includes types, :number
+    assert_equal "START", tokens.find { |t| t.type == :symbol }.value
+    assert_equal 10, tokens.find { |t| t.type == :number }.value
+  end
+
+  def test_tokenizes_subtraction_expression
+    source = "JMP END-5"
+    tokens = @lexer_class.tokenize(source)
+
+    types = tokens.map(&:type)
+    assert_includes types, :operation
+    assert_includes types, :symbol
+    assert_includes types, :minus
+    assert_includes types, :number
+  end
+
+  def test_tokenizes_current_address
+    source = "JMP *+2"
+    tokens = @lexer_class.tokenize(source)
+
+    types = tokens.map(&:type)
+    assert_includes types, :operation
+    assert_includes types, :current_address
+    assert_includes types, :plus
+    assert_includes types, :number
+  end
+
+  # Literal tokenization tests
+  def test_tokenizes_literal_constant
+    source = "LDA =5="
+    tokens = @lexer_class.tokenize(source)
+
+    assert_equal 2, tokens.length
+    assert_equal :literal, tokens[1].type
+    assert_equal "=5=", tokens[1].value
+  end
+
+  def test_tokenizes_literal_with_additional_address
+    source = "LDA =100=,1"
+    tokens = @lexer_class.tokenize(source)
+
+    types = tokens.map(&:type)
+    assert_includes types, :operation
+    assert_includes types, :literal
+    assert_includes types, :comma
+    assert_includes types, :index
+  end
+
+  # Comment tokenization tests
+  def test_tokenizes_inline_comment_after_instruction
+    source = "LDA 1000   * Load accumulator"
+    tokens = @lexer_class.tokenize(source)
+
+    assert_equal :comment, tokens.last.type
+    assert_equal "* Load accumulator", tokens.last.value
+  end
+
+  def test_tokenizes_instruction_without_comment
+    source = "ADD 2000"
+    tokens = @lexer_class.tokenize(source)
+
+    assert tokens.none? { |t| t.type == :comment }
+  end
+
+  # Pseudo-operation tokenization tests
+  def test_tokenizes_orig_directive
+    source = "ORIG 1000"
+    tokens = @lexer_class.tokenize(source)
+
+    assert_equal :operation, tokens[0].type
+    assert_equal "ORIG", tokens[0].value
+    assert_equal :number, tokens[1].type
+    assert_equal 1000, tokens[1].value
+  end
+
+  def test_tokenizes_equ_directive
+    source = "SIZE EQU 100"
+    tokens = @lexer_class.tokenize(source)
+
+    assert_equal :label, tokens[0].type
+    assert_equal "SIZE", tokens[0].value
+    assert_equal :operation, tokens[1].type
+    assert_equal "EQU", tokens[1].value
+    assert_equal :number, tokens[2].type
+    assert_equal 100, tokens[2].value
+  end
+
+  def test_tokenizes_con_directive
+    source = "VALUE CON 12345"
+    tokens = @lexer_class.tokenize(source)
+
+    assert_equal :label, tokens[0].type
+    assert_equal :operation, tokens[1].type
+    assert_equal "CON", tokens[1].value
+    assert_equal :number, tokens[2].type
+  end
+
+  def test_tokenizes_alf_directive
+    source = 'ALF HELLO'
+    tokens = @lexer_class.tokenize(source)
+
+    assert_equal :operation, tokens[0].type
+    assert_equal "ALF", tokens[0].value
+    assert_equal :symbol, tokens[1].type
+    assert_equal "HELLO", tokens[1].value
+  end
+
+  def test_tokenizes_end_directive
+    source = "END START"
+    tokens = @lexer_class.tokenize(source)
+
+    assert_equal :operation, tokens[0].type
+    assert_equal "END", tokens[0].value
+    assert_equal :symbol, tokens[1].type
+    assert_equal "START", tokens[1].value
+  end
+
+  # Multi-line program tokenization tests
+  def test_tokenizes_a_simple_program
+    source = <<~MIXAL
+      * Simple program
+      START LDA VALUE
+            STA RESULT
+            HLT
+      VALUE CON 100
+      RESULT CON 0
+            END START
+    MIXAL
+
+    tokens = @lexer_class.tokenize(source)
+
+    # Should have tokens for: comment, label+operation+symbol, operation+symbol, operation,
+    # label+operation+number, label+operation+number, operation+symbol
+    assert_operator tokens.length, :>, 10
+
+    # Check first line (comment)
+    assert_equal :comment, tokens[0].type
+
+    # Check label START exists
+    labels = tokens.select { |t| t.type == :label }
+    assert_includes labels.map(&:value), "START"
+    assert_includes labels.map(&:value), "VALUE"
+    assert_includes labels.map(&:value), "RESULT"
+
+    # Check operations
+    operations = tokens.select { |t| t.type == :operation }
+    assert_includes operations.map(&:value), "LDA"
+    assert_includes operations.map(&:value), "STA"
+    assert_includes operations.map(&:value), "HLT"
+    assert_includes operations.map(&:value), "CON"
+    assert_includes operations.map(&:value), "END"
+  end
+
+  def test_tracks_line_numbers_correctly
+    source = <<~MIXAL
+      LDA 1000
+      STA 2000
+      HLT
+    MIXAL
+
+    tokens = @lexer_class.tokenize(source)
+
+    # First instruction on line 1
+    assert_equal 1, tokens[0].line
+
+    # Second instruction on line 2
+    sta_token = tokens.find { |t| t.value == "STA" }
+    assert_equal 2, sta_token.line
+
+    # Third instruction on line 3
+    hlt_token = tokens.find { |t| t.value == "HLT" }
+    assert_equal 3, hlt_token.line
+  end
+
+  # Edge cases tests
+  def test_handles_instruction_with_no_operand
+    source = "HLT"
+    tokens = @lexer_class.tokenize(source)
+
+    assert_equal 1, tokens.length
+    assert_equal :operation, tokens[0].type
+    assert_equal "HLT", tokens[0].value
+  end
+
+  def test_handles_multiple_spaces_between_tokens
+    source = "LDA     1000"
+    tokens = @lexer_class.tokenize(source)
+
+    assert_equal 2, tokens.length
+    assert_equal "LDA", tokens[0].value
+    assert_equal 1000, tokens[1].value
+  end
+
+  def test_handles_negative_numbers
+    source = "LDA -50"
+    tokens = @lexer_class.tokenize(source)
+
+    assert_equal :number, tokens[1].type
+    assert_equal(-50, tokens[1].value)
+  end
+
+  def test_handles_field_specification_with_single_number
+    source = "LDA 1000(5)"
+    tokens = @lexer_class.tokenize(source)
+
+    types = tokens.map(&:type)
+    # No comma because there's no index - just address with field spec
+    assert_includes types, :operation
+    assert_includes types, :number
+    assert_includes types, :lparen
+    assert_includes types, :rparen
+    refute_includes types, :comma
+  end
+
+  # All instruction types tests
+  def test_recognizes_load_instructions
+    ["LDA", "LDX", "LD1", "LD2", "LD3", "LD4", "LD5", "LD6"].each do |op|
+      tokens = @lexer_class.tokenize("#{op} 1000")
+      assert_equal :operation, tokens[0].type
+      assert_equal op, tokens[0].value
     end
   end
 
-  describe "address field tokenization" do
-    it "tokenizes instruction with index" do
-      source = "LDA 1000,1"
-      tokens = lexer_class.tokenize(source)
-
-      expect(tokens.map(&:type)).to include(:operation, :number, :comma, :index)
-      expect(tokens.find { |t| t.type == :index }.value).to eq("1")
-    end
-
-    it "tokenizes instruction with field specification" do
-      source = "LDA 1000(1:5)"
-      tokens = lexer_class.tokenize(source)
-
-      types = tokens.map(&:type)
-      # No comma because there's no index - just address with field spec
-      expect(types).to include(:operation, :number, :lparen, :colon, :rparen)
-      expect(types).not_to include(:comma)
-    end
-
-    it "tokenizes instruction with index and field" do
-      source = "LDA 1000,1(2:4)"
-      tokens = lexer_class.tokenize(source)
-
-      types = tokens.map(&:type)
-      expect(types).to include(:operation, :number, :comma, :index, :lparen, :colon, :rparen)
-    end
-
-    it "tokenizes symbolic address" do
-      source = "JMP LOOP"
-      tokens = lexer_class.tokenize(source)
-
-      expect(tokens.length).to eq(2)
-      expect(tokens[0].type).to eq(:operation)
-      expect(tokens[1].type).to eq(:symbol)
-      expect(tokens[1].value).to eq("LOOP")
+  def test_recognizes_store_instructions
+    ["STA", "STX", "ST1", "ST2", "STJ", "STZ"].each do |op|
+      tokens = @lexer_class.tokenize("#{op} 1000")
+      assert_equal :operation, tokens[0].type
     end
   end
 
-  describe "expression tokenization" do
-    it "tokenizes addition expression" do
-      source = "LDA START+10"
-      tokens = lexer_class.tokenize(source)
-
-      expect(tokens.map(&:type)).to include(:operation, :symbol, :plus, :number)
-      expect(tokens.find { |t| t.type == :symbol }.value).to eq("START")
-      expect(tokens.find { |t| t.type == :number }.value).to eq(10)
-    end
-
-    it "tokenizes subtraction expression" do
-      source = "JMP END-5"
-      tokens = lexer_class.tokenize(source)
-
-      expect(tokens.map(&:type)).to include(:operation, :symbol, :minus, :number)
-    end
-
-    it "tokenizes current address (*)" do
-      source = "JMP *+2"
-      tokens = lexer_class.tokenize(source)
-
-      expect(tokens.map(&:type)).to include(:operation, :current_address, :plus, :number)
+  def test_recognizes_arithmetic_instructions
+    ["ADD", "SUB", "MUL", "DIV"].each do |op|
+      tokens = @lexer_class.tokenize("#{op} 1000")
+      assert_equal :operation, tokens[0].type
     end
   end
 
-  describe "literal tokenization" do
-    it "tokenizes literal constant" do
-      source = "LDA =5="
-      tokens = lexer_class.tokenize(source)
-
-      expect(tokens.length).to eq(2)
-      expect(tokens[1].type).to eq(:literal)
-      expect(tokens[1].value).to eq("=5=")
-    end
-
-    it "tokenizes literal with additional address" do
-      source = "LDA =100=,1"
-      tokens = lexer_class.tokenize(source)
-
-      expect(tokens.map(&:type)).to include(:operation, :literal, :comma, :index)
+  def test_recognizes_address_transfer_instructions
+    ["ENTA", "ENT1", "INCA", "INC1", "DECA", "DEC1"].each do |op|
+      tokens = @lexer_class.tokenize("#{op} 1000")
+      assert_equal :operation, tokens[0].type
     end
   end
 
-  describe "comment tokenization" do
-    it "tokenizes inline comment after instruction" do
-      source = "LDA 1000   * Load accumulator"
-      tokens = lexer_class.tokenize(source)
-
-      expect(tokens.last.type).to eq(:comment)
-      expect(tokens.last.value).to eq("* Load accumulator")
-    end
-
-    it "tokenizes instruction without comment" do
-      source = "ADD 2000"
-      tokens = lexer_class.tokenize(source)
-
-      expect(tokens.none? { |t| t.type == :comment }).to eq(true)
+  def test_recognizes_comparison_instructions
+    ["CMPA", "CMPX", "CMP1"].each do |op|
+      tokens = @lexer_class.tokenize("#{op} 1000")
+      assert_equal :operation, tokens[0].type
     end
   end
 
-  describe "pseudo-operation tokenization" do
-    it "tokenizes ORIG directive" do
-      source = "ORIG 1000"
-      tokens = lexer_class.tokenize(source)
-
-      expect(tokens[0].type).to eq(:operation)
-      expect(tokens[0].value).to eq("ORIG")
-      expect(tokens[1].type).to eq(:number)
-      expect(tokens[1].value).to eq(1000)
-    end
-
-    it "tokenizes EQU directive" do
-      source = "SIZE EQU 100"
-      tokens = lexer_class.tokenize(source)
-
-      expect(tokens[0].type).to eq(:label)
-      expect(tokens[0].value).to eq("SIZE")
-      expect(tokens[1].type).to eq(:operation)
-      expect(tokens[1].value).to eq("EQU")
-      expect(tokens[2].type).to eq(:number)
-      expect(tokens[2].value).to eq(100)
-    end
-
-    it "tokenizes CON directive" do
-      source = "VALUE CON 12345"
-      tokens = lexer_class.tokenize(source)
-
-      expect(tokens[0].type).to eq(:label)
-      expect(tokens[1].type).to eq(:operation)
-      expect(tokens[1].value).to eq("CON")
-      expect(tokens[2].type).to eq(:number)
-    end
-
-    it "tokenizes ALF directive" do
-      source = 'ALF HELLO'
-      tokens = lexer_class.tokenize(source)
-
-      expect(tokens[0].type).to eq(:operation)
-      expect(tokens[0].value).to eq("ALF")
-      expect(tokens[1].type).to eq(:symbol)
-      expect(tokens[1].value).to eq("HELLO")
-    end
-
-    it "tokenizes END directive" do
-      source = "END START"
-      tokens = lexer_class.tokenize(source)
-
-      expect(tokens[0].type).to eq(:operation)
-      expect(tokens[0].value).to eq("END")
-      expect(tokens[1].type).to eq(:symbol)
-      expect(tokens[1].value).to eq("START")
+  def test_recognizes_jump_instructions
+    ["JMP", "JAN", "JAZ", "JL", "JE", "JG"].each do |op|
+      tokens = @lexer_class.tokenize("#{op} 1000")
+      assert_equal :operation, tokens[0].type
     end
   end
 
-  describe "multi-line program tokenization" do
-    it "tokenizes a simple program" do
-      source = <<~MIXAL
-        * Simple program
-        START LDA VALUE
-              STA RESULT
-              HLT
-        VALUE CON 100
-        RESULT CON 0
-              END START
-      MIXAL
-
-      tokens = lexer_class.tokenize(source)
-
-      # Should have tokens for: comment, label+operation+symbol, operation+symbol, operation,
-      # label+operation+number, label+operation+number, operation+symbol
-      expect(tokens.length).to be > 10
-
-      # Check first line (comment)
-      expect(tokens[0].type).to eq(:comment)
-
-      # Check label START exists
-      labels = tokens.select { |t| t.type == :label }
-      expect(labels.map(&:value)).to include("START", "VALUE", "RESULT")
-
-      # Check operations
-      operations = tokens.select { |t| t.type == :operation }
-      expect(operations.map(&:value)).to include("LDA", "STA", "HLT", "CON", "END")
-    end
-
-    it "tracks line numbers correctly" do
-      source = <<~MIXAL
-        LDA 1000
-        STA 2000
-        HLT
-      MIXAL
-
-      tokens = lexer_class.tokenize(source)
-
-      # First instruction on line 1
-      expect(tokens[0].line).to eq(1)
-
-      # Second instruction on line 2
-      sta_token = tokens.find { |t| t.value == "STA" }
-      expect(sta_token.line).to eq(2)
-
-      # Third instruction on line 3
-      hlt_token = tokens.find { |t| t.value == "HLT" }
-      expect(hlt_token.line).to eq(3)
+  def test_recognizes_shift_instructions
+    ["SLA", "SRA", "SLAX", "SRAX", "SLC", "SRC"].each do |op|
+      tokens = @lexer_class.tokenize("#{op} 1")
+      assert_equal :operation, tokens[0].type
     end
   end
 
-  describe "edge cases" do
-    it "handles instruction with no operand" do
-      source = "HLT"
-      tokens = lexer_class.tokenize(source)
-
-      expect(tokens.length).to eq(1)
-      expect(tokens[0].type).to eq(:operation)
-      expect(tokens[0].value).to eq("HLT")
-    end
-
-    it "handles multiple spaces between tokens" do
-      source = "LDA     1000"
-      tokens = lexer_class.tokenize(source)
-
-      expect(tokens.length).to eq(2)
-      expect(tokens[0].value).to eq("LDA")
-      expect(tokens[1].value).to eq(1000)
-    end
-
-    it "handles negative numbers" do
-      source = "LDA -50"
-      tokens = lexer_class.tokenize(source)
-
-      expect(tokens[1].type).to eq(:number)
-      expect(tokens[1].value).to eq(-50)
-    end
-
-    it "handles field specification with single number" do
-      source = "LDA 1000(5)"
-      tokens = lexer_class.tokenize(source)
-
-      types = tokens.map(&:type)
-      # No comma because there's no index - just address with field spec
-      expect(types).to include(:operation, :number, :lparen, :rparen)
-      expect(types).not_to include(:comma)
-    end
-  end
-
-  describe "all instruction types" do
-    it "recognizes load instructions" do
-      ["LDA", "LDX", "LD1", "LD2", "LD3", "LD4", "LD5", "LD6"].each do |op|
-        tokens = lexer_class.tokenize("#{op} 1000")
-        expect(tokens[0].type).to eq(:operation)
-        expect(tokens[0].value).to eq(op)
-      end
-    end
-
-    it "recognizes store instructions" do
-      ["STA", "STX", "ST1", "ST2", "STJ", "STZ"].each do |op|
-        tokens = lexer_class.tokenize("#{op} 1000")
-        expect(tokens[0].type).to eq(:operation)
-      end
-    end
-
-    it "recognizes arithmetic instructions" do
-      ["ADD", "SUB", "MUL", "DIV"].each do |op|
-        tokens = lexer_class.tokenize("#{op} 1000")
-        expect(tokens[0].type).to eq(:operation)
-      end
-    end
-
-    it "recognizes address transfer instructions" do
-      ["ENTA", "ENT1", "INCA", "INC1", "DECA", "DEC1"].each do |op|
-        tokens = lexer_class.tokenize("#{op} 1000")
-        expect(tokens[0].type).to eq(:operation)
-      end
-    end
-
-    it "recognizes comparison instructions" do
-      ["CMPA", "CMPX", "CMP1"].each do |op|
-        tokens = lexer_class.tokenize("#{op} 1000")
-        expect(tokens[0].type).to eq(:operation)
-      end
-    end
-
-    it "recognizes jump instructions" do
-      ["JMP", "JAN", "JAZ", "JL", "JE", "JG"].each do |op|
-        tokens = lexer_class.tokenize("#{op} 1000")
-        expect(tokens[0].type).to eq(:operation)
-      end
-    end
-
-    it "recognizes shift instructions" do
-      ["SLA", "SRA", "SLAX", "SRAX", "SLC", "SRC"].each do |op|
-        tokens = lexer_class.tokenize("#{op} 1")
-        expect(tokens[0].type).to eq(:operation)
-      end
-    end
-
-    it "recognizes miscellaneous instructions" do
-      ["MOVE", "NUM", "CHAR", "HLT", "NOP"].each do |op|
-        tokens = lexer_class.tokenize("#{op}")
-        expect(tokens[0].type).to eq(:operation)
-      end
+  def test_recognizes_miscellaneous_instructions
+    ["MOVE", "NUM", "CHAR", "HLT", "NOP"].each do |op|
+      tokens = @lexer_class.tokenize("#{op}")
+      assert_equal :operation, tokens[0].type
     end
   end
 end

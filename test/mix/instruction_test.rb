@@ -1,191 +1,189 @@
 # frozen_string_literal: true
 
-RSpec.describe Taocp::Mix::Instruction do
-  describe "initialization" do
-    it "creates an instruction with default values" do
-      inst = described_class.new
-      expect(inst.address).to eq(0)
-      expect(inst.index).to eq(0)
-      expect(inst.field).to eq(0)
-      expect(inst.opcode).to eq(0)
-      expect(inst.sign).to eq(1)
-    end
+require "test_helper"
 
-    it "creates an instruction with specified values" do
-      inst = described_class.new(address: 100, index: 1, field: 5, opcode: 8, sign: -1)
-      expect(inst.address).to eq(100)
-      expect(inst.index).to eq(1)
-      expect(inst.field).to eq(5)
-      expect(inst.opcode).to eq(8)
-      expect(inst.sign).to eq(-1)
+class MixInstructionTest < Minitest::Test
+  # Initialization tests
+  def test_creates_instruction_with_default_values
+    inst = Taocp::Mix::Instruction.new
+    assert_equal 0, inst.address
+    assert_equal 0, inst.index
+    assert_equal 0, inst.field
+    assert_equal 0, inst.opcode
+    assert_equal 1, inst.sign
+  end
+
+  def test_creates_instruction_with_specified_values
+    inst = Taocp::Mix::Instruction.new(address: 100, index: 1, field: 5, opcode: 8, sign: -1)
+    assert_equal 100, inst.address
+    assert_equal 1, inst.index
+    assert_equal 5, inst.field
+    assert_equal 8, inst.opcode
+    assert_equal(-1, inst.sign)
+  end
+
+  # to_word tests
+  def test_encodes_a_simple_instruction
+    inst = Taocp::Mix::Instruction.new(address: 100, index: 1, field: 5, opcode: 8, sign: 1)
+    word = inst.to_word
+
+    # 100 = 1*64 + 36
+    assert_equal 1, word.sign
+    assert_equal [1, 36, 1, 5, 8], word.bytes
+  end
+
+  def test_encodes_an_instruction_with_zero_address
+    inst = Taocp::Mix::Instruction.new(address: 0, index: 0, field: 0, opcode: Taocp::Mix::Instruction::NOP, sign: 1)
+    word = inst.to_word
+
+    assert_equal [0, 0, 0, 0, 0], word.bytes
+  end
+
+  def test_encodes_an_instruction_with_maximum_address
+    # Max address is 4095 = 63*64 + 63
+    inst = Taocp::Mix::Instruction.new(address: 4095, index: 6, field: 5, opcode: 8, sign: -1)
+    word = inst.to_word
+
+    assert_equal(-1, word.sign)
+    assert_equal [63, 63, 6, 5, 8], word.bytes
+  end
+
+  def test_encodes_lda_instruction
+    # LDA 2000
+    inst = Taocp::Mix::Instruction.new(address: 2000, index: 0, field: 5, opcode: Taocp::Mix::Instruction::LDA)
+    word = inst.to_word
+
+    # 2000 = 31*64 + 16
+    assert_equal 31, word.bytes[0]
+    assert_equal 16, word.bytes[1]
+    assert_equal 8, word.bytes[4]  # LDA opcode
+  end
+
+  # from_word tests
+  def test_decodes_a_simple_instruction
+    # 100 = 1*64 + 36
+    word = Taocp::Mix::Word.new(sign: 1, bytes: [1, 36, 1, 5, 8])
+    inst = Taocp::Mix::Instruction.from_word(word)
+
+    assert_equal 100, inst.address
+    assert_equal 1, inst.index
+    assert_equal 5, inst.field
+    assert_equal 8, inst.opcode
+    assert_equal 1, inst.sign
+  end
+
+  def test_decodes_nop_instruction
+    word = Taocp::Mix::Word.new(sign: 1, bytes: [0, 0, 0, 0, 0])
+    inst = Taocp::Mix::Instruction.from_word(word)
+
+    assert_equal 0, inst.address
+    assert_equal 0, inst.opcode
+  end
+
+  def test_decodes_instruction_with_negative_sign
+    word = Taocp::Mix::Word.new(sign: -1, bytes: [0, 50, 2, 13, 8])
+    inst = Taocp::Mix::Instruction.from_word(word)
+
+    assert_equal 50, inst.address
+    assert_equal(-1, inst.sign)
+  end
+
+  # Round-trip encoding tests
+  def test_round_trips_simple_instructions
+    [
+      { address: 0, index: 0, field: 0, opcode: 0, sign: 1 },
+      { address: 100, index: 1, field: 5, opcode: 8, sign: 1 },
+      { address: 2000, index: 3, field: 13, opcode: 24, sign: -1 },
+      { address: 4095, index: 6, field: 63, opcode: 63, sign: 1 },
+    ].each do |params|
+      original = Taocp::Mix::Instruction.new(**params)
+      word = original.to_word
+      decoded = Taocp::Mix::Instruction.from_word(word)
+
+      assert_equal original.address, decoded.address
+      assert_equal original.index, decoded.index
+      assert_equal original.field, decoded.field
+      assert_equal original.opcode, decoded.opcode
+      assert_equal original.sign, decoded.sign
     end
   end
 
-  describe "#to_word" do
-    it "encodes a simple instruction" do
-      inst = described_class.new(address: 100, index: 1, field: 5, opcode: 8, sign: 1)
-      word = inst.to_word
+  # effective_address tests
+  def test_returns_address_when_index_is_0
+    registers = Taocp::Mix::Registers.new
+    inst = Taocp::Mix::Instruction.new(address: 100, index: 0)
+    assert_equal 100, inst.effective_address(registers)
+  end
 
-      # 100 = 1*64 + 36
-      expect(word.sign).to eq(1)
-      expect(word.bytes).to eq([1, 36, 1, 5, 8])
-    end
+  def test_adds_index_register_value_when_index_greater_than_0
+    registers = Taocp::Mix::Registers.new
+    registers.set_index_i(1, 50)
+    inst = Taocp::Mix::Instruction.new(address: 100, index: 1, sign: 1)
+    assert_equal 150, inst.effective_address(registers)
+  end
 
-    it "encodes an instruction with zero address" do
-      inst = described_class.new(address: 0, index: 0, field: 0, opcode: described_class::NOP, sign: 1)
-      word = inst.to_word
+  def test_handles_negative_address_sign
+    registers = Taocp::Mix::Registers.new
+    registers.set_index_i(2, 30)
+    inst = Taocp::Mix::Instruction.new(address: 100, index: 2, sign: -1)
+    # -100 + 30 = -70, but address is abs = 70
+    assert_equal 70, inst.effective_address(registers)
+  end
 
-      expect(word.bytes).to eq([0, 0, 0, 0, 0])
-    end
+  def test_handles_zero_index_register
+    registers = Taocp::Mix::Registers.new
+    registers.set_index_i(3, 0)
+    inst = Taocp::Mix::Instruction.new(address: 200, index: 3)
+    assert_equal 200, inst.effective_address(registers)
+  end
 
-    it "encodes an instruction with maximum address" do
-      # Max address is 4095 = 63*64 + 63
-      inst = described_class.new(address: 4095, index: 6, field: 5, opcode: 8, sign: -1)
-      word = inst.to_word
-
-      expect(word.sign).to eq(-1)
-      expect(word.bytes).to eq([63, 63, 6, 5, 8])
-    end
-
-    it "encodes LDA instruction" do
-      # LDA 2000
-      inst = described_class.new(address: 2000, index: 0, field: 5, opcode: described_class::LDA)
-      word = inst.to_word
-
-      # 2000 = 31*64 + 16
-      expect(word.bytes[0]).to eq(31)
-      expect(word.bytes[1]).to eq(16)
-      expect(word.bytes[4]).to eq(8)  # LDA opcode
+  def test_uses_different_index_registers
+    registers = Taocp::Mix::Registers.new
+    (1..6).each do |i|
+      registers.set_index_i(i, i * 10)
+      inst = Taocp::Mix::Instruction.new(address: 100, index: i)
+      assert_equal 100 + i * 10, inst.effective_address(registers)
     end
   end
 
-  describe ".from_word" do
-    it "decodes a simple instruction" do
-      # 100 = 1*64 + 36
-      word = Taocp::Mix::Word.new(sign: 1, bytes: [1, 36, 1, 5, 8])
-      inst = described_class.from_word(word)
-
-      expect(inst.address).to eq(100)
-      expect(inst.index).to eq(1)
-      expect(inst.field).to eq(5)
-      expect(inst.opcode).to eq(8)
-      expect(inst.sign).to eq(1)
-    end
-
-    it "decodes NOP instruction" do
-      word = Taocp::Mix::Word.new(sign: 1, bytes: [0, 0, 0, 0, 0])
-      inst = described_class.from_word(word)
-
-      expect(inst.address).to eq(0)
-      expect(inst.opcode).to eq(0)
-    end
-
-    it "decodes instruction with negative sign" do
-      word = Taocp::Mix::Word.new(sign: -1, bytes: [0, 50, 2, 13, 8])
-      inst = described_class.from_word(word)
-
-      expect(inst.address).to eq(50)
-      expect(inst.sign).to eq(-1)
-    end
+  # Opcode constants tests
+  def test_defines_load_opcodes
+    assert_equal 8, Taocp::Mix::Instruction::LDA
+    assert_equal 15, Taocp::Mix::Instruction::LDX
+    assert_equal 9, Taocp::Mix::Instruction::LD1
   end
 
-  describe "round-trip encoding" do
-    it "round-trips simple instructions" do
-      [
-        { address: 0, index: 0, field: 0, opcode: 0, sign: 1 },
-        { address: 100, index: 1, field: 5, opcode: 8, sign: 1 },
-        { address: 2000, index: 3, field: 13, opcode: 24, sign: -1 },
-        { address: 4095, index: 6, field: 63, opcode: 63, sign: 1 },
-      ].each do |params|
-        original = described_class.new(**params)
-        word = original.to_word
-        decoded = described_class.from_word(word)
-
-        expect(decoded.address).to eq(original.address)
-        expect(decoded.index).to eq(original.index)
-        expect(decoded.field).to eq(original.field)
-        expect(decoded.opcode).to eq(original.opcode)
-        expect(decoded.sign).to eq(original.sign)
-      end
-    end
+  def test_defines_store_opcodes
+    assert_equal 24, Taocp::Mix::Instruction::STA
+    assert_equal 31, Taocp::Mix::Instruction::STX
+    assert_equal 33, Taocp::Mix::Instruction::STZ
   end
 
-  describe "#effective_address" do
-    let(:registers) { Taocp::Mix::Registers.new }
-
-    it "returns address when index is 0" do
-      inst = described_class.new(address: 100, index: 0)
-      expect(inst.effective_address(registers)).to eq(100)
-    end
-
-    it "adds index register value when index > 0" do
-      registers.set_index_i(1, 50)
-      inst = described_class.new(address: 100, index: 1, sign: 1)
-      expect(inst.effective_address(registers)).to eq(150)
-    end
-
-    it "handles negative address sign" do
-      registers.set_index_i(2, 30)
-      inst = described_class.new(address: 100, index: 2, sign: -1)
-      # -100 + 30 = -70, but address is abs = 70
-      expect(inst.effective_address(registers)).to eq(70)
-    end
-
-    it "handles zero index register" do
-      registers.set_index_i(3, 0)
-      inst = described_class.new(address: 200, index: 3)
-      expect(inst.effective_address(registers)).to eq(200)
-    end
-
-    it "uses different index registers" do
-      (1..6).each do |i|
-        registers.set_index_i(i, i * 10)
-        inst = described_class.new(address: 100, index: i)
-        expect(inst.effective_address(registers)).to eq(100 + i * 10)
-      end
-    end
+  def test_defines_arithmetic_opcodes
+    assert_equal 1, Taocp::Mix::Instruction::ADD
+    assert_equal 2, Taocp::Mix::Instruction::SUB
+    assert_equal 3, Taocp::Mix::Instruction::MUL
+    assert_equal 4, Taocp::Mix::Instruction::DIV
   end
 
-  describe "opcode constants" do
-    it "defines load opcodes" do
-      expect(described_class::LDA).to eq(8)
-      expect(described_class::LDX).to eq(15)
-      expect(described_class::LD1).to eq(9)
-    end
-
-    it "defines store opcodes" do
-      expect(described_class::STA).to eq(24)
-      expect(described_class::STX).to eq(31)
-      expect(described_class::STZ).to eq(33)
-    end
-
-    it "defines arithmetic opcodes" do
-      expect(described_class::ADD).to eq(1)
-      expect(described_class::SUB).to eq(2)
-      expect(described_class::MUL).to eq(3)
-      expect(described_class::DIV).to eq(4)
-    end
-
-    it "defines comparison opcodes" do
-      expect(described_class::CMPA).to eq(56)
-      expect(described_class::CMPX).to eq(63)
-    end
-
-    it "defines special opcodes" do
-      expect(described_class::NOP).to eq(0)
-      expect(described_class::HLT).to eq(5)
-    end
+  def test_defines_comparison_opcodes
+    assert_equal 56, Taocp::Mix::Instruction::CMPA
+    assert_equal 63, Taocp::Mix::Instruction::CMPX
   end
 
-  describe "#to_s" do
-    it "formats instruction as string" do
-      inst = described_class.new(address: 100, index: 1, field: 5, opcode: 8)
-      expect(inst.to_s).to eq("+0100 1 5 8")
-    end
+  def test_defines_special_opcodes
+    assert_equal 0, Taocp::Mix::Instruction::NOP
+    assert_equal 5, Taocp::Mix::Instruction::HLT
+  end
 
-    it "formats negative instruction" do
-      inst = described_class.new(address: 50, index: 2, field: 13, opcode: 24, sign: -1)
-      expect(inst.to_s).to eq("-0050 2 13 24")
-    end
+  # to_s tests
+  def test_formats_instruction_as_string
+    inst = Taocp::Mix::Instruction.new(address: 100, index: 1, field: 5, opcode: 8)
+    assert_equal "+0100 1 5 8", inst.to_s
+  end
+
+  def test_formats_negative_instruction
+    inst = Taocp::Mix::Instruction.new(address: 50, index: 2, field: 13, opcode: 24, sign: -1)
+    assert_equal "-0050 2 13 24", inst.to_s
   end
 end

@@ -1,299 +1,294 @@
 # frozen_string_literal: true
 
-RSpec.describe Taocp::Mix::Machine do
-  let(:machine) { described_class.new }
+require "test_helper"
 
-  describe "initialization" do
-    it "creates a new machine with initialized state" do
-      expect(machine.memory).to be_a(Taocp::Mix::Memory)
-      expect(machine.registers).to be_a(Taocp::Mix::Registers)
-      expect(machine.pc).to eq(0)
-      expect(machine.halted).to eq(false)
+class MixMachineTest < Minitest::Test
+  def setup
+    @machine = Taocp::Mix::Machine.new
+  end
+
+  # Initialization tests
+  def test_creates_a_new_machine_with_initialized_state
+    assert_instance_of Taocp::Mix::Memory, @machine.memory
+    assert_instance_of Taocp::Mix::Registers, @machine.registers
+    assert_equal 0, @machine.pc
+    assert_equal false, @machine.halted
+  end
+
+  def test_initializes_memory_with_zero_words
+    assert_equal 0, @machine.memory[0].to_i
+    assert_equal 0, @machine.memory[100].to_i
+    assert_equal 0, @machine.memory[3999].to_i
+  end
+
+  def test_initializes_all_registers_to_zero
+    assert_equal 0, @machine.registers.a.to_i
+    assert_equal 0, @machine.registers.x.to_i
+    (1..6).each do |i|
+      assert_equal 0, @machine.registers.get_index(i).to_i
     end
+    assert_equal 0, @machine.registers.j
+  end
 
-    it "initializes memory with zero words" do
-      expect(machine.memory[0].to_i).to eq(0)
-      expect(machine.memory[100].to_i).to eq(0)
-      expect(machine.memory[3999].to_i).to eq(0)
-    end
+  # Reset tests
+  def test_resets_machine_to_initial_state
+    # Modify machine state
+    @machine.memory[100] = Taocp::Mix::Word.from_i(42)
+    @machine.registers.a = Taocp::Mix::Word.from_i(99)
+    @machine.instance_variable_set(:@pc, 50)
+    @machine.halted = true
 
-    it "initializes all registers to zero" do
-      expect(machine.registers.a.to_i).to eq(0)
-      expect(machine.registers.x.to_i).to eq(0)
-      (1..6).each do |i|
-        expect(machine.registers.get_index(i).to_i).to eq(0)
-      end
-      expect(machine.registers.j).to eq(0)
+    # Reset
+    @machine.reset
+
+    # Verify reset
+    assert_equal 0, @machine.memory[100].to_i
+    assert_equal 0, @machine.registers.a.to_i
+    assert_equal 0, @machine.pc
+    assert_equal false, @machine.halted
+  end
+
+  # Memory access tests
+  def test_allows_reading_and_writing_memory
+    word = Taocp::Mix::Word.from_i(12345)
+    @machine.memory[500] = word
+
+    assert_equal 12345, @machine.memory[500].to_i
+  end
+
+  def test_maintains_separate_memory_locations
+    @machine.memory[0] = Taocp::Mix::Word.from_i(1)
+    @machine.memory[1] = Taocp::Mix::Word.from_i(2)
+    @machine.memory[2] = Taocp::Mix::Word.from_i(3)
+
+    assert_equal 1, @machine.memory[0].to_i
+    assert_equal 2, @machine.memory[1].to_i
+    assert_equal 3, @machine.memory[2].to_i
+  end
+
+  # Register access tests
+  def test_allows_setting_and_getting_register_a
+    word = Taocp::Mix::Word.from_i(100)
+    @machine.registers.a = word
+    assert_equal 100, @machine.registers.a.to_i
+  end
+
+  def test_allows_setting_and_getting_register_x
+    word = Taocp::Mix::Word.from_i(200)
+    @machine.registers.x = word
+    assert_equal 200, @machine.registers.x.to_i
+  end
+
+  def test_allows_setting_and_getting_index_registers
+    (1..6).each do |i|
+      @machine.registers.set_index_i(i, i * 10)
+      assert_equal i * 10, @machine.registers.get_index_i(i)
     end
   end
 
-  describe "#reset" do
-    it "resets machine to initial state" do
-      # Modify machine state
-      machine.memory[100] = Taocp::Mix::Word.from_i(42)
-      machine.registers.a = Taocp::Mix::Word.from_i(99)
-      machine.instance_variable_set(:@pc, 50)
-      machine.halted = true
-
-      # Reset
-      machine.reset
-
-      # Verify reset
-      expect(machine.memory[100].to_i).to eq(0)
-      expect(machine.registers.a.to_i).to eq(0)
-      expect(machine.pc).to eq(0)
-      expect(machine.halted).to eq(false)
-    end
+  def test_sets_comparison_flag
+    @machine.registers.comparison_flag = :greater
+    assert_equal :greater, @machine.registers.comparison_flag
   end
 
-  describe "memory access" do
-    it "allows reading and writing memory" do
-      word = Taocp::Mix::Word.from_i(12345)
-      machine.memory[500] = word
-
-      expect(machine.memory[500].to_i).to eq(12345)
-    end
-
-    it "maintains separate memory locations" do
-      machine.memory[0] = Taocp::Mix::Word.from_i(1)
-      machine.memory[1] = Taocp::Mix::Word.from_i(2)
-      machine.memory[2] = Taocp::Mix::Word.from_i(3)
-
-      expect(machine.memory[0].to_i).to eq(1)
-      expect(machine.memory[1].to_i).to eq(2)
-      expect(machine.memory[2].to_i).to eq(3)
-    end
+  def test_sets_overflow_flag
+    @machine.registers.overflow = true
+    assert_equal true, @machine.registers.overflow
   end
 
-  describe "register access" do
-    it "allows setting and getting register A" do
-      word = Taocp::Mix::Word.from_i(100)
-      machine.registers.a = word
-      expect(machine.registers.a.to_i).to eq(100)
-    end
+  # HLT instruction tests
+  def test_hlt_instruction_halts_the_machine
+    # Create HLT instruction at memory[0]
+    hlt_inst = Taocp::Mix::Instruction.new(opcode: Taocp::Mix::Instruction::HLT, field: 2)
+    @machine.memory[0] = hlt_inst.to_word
 
-    it "allows setting and getting register X" do
-      word = Taocp::Mix::Word.from_i(200)
-      machine.registers.x = word
-      expect(machine.registers.x.to_i).to eq(200)
-    end
+    @machine.step
 
-    it "allows setting and getting index registers" do
-      (1..6).each do |i|
-        machine.registers.set_index_i(i, i * 10)
-        expect(machine.registers.get_index_i(i)).to eq(i * 10)
-      end
-    end
-
-    it "sets comparison flag" do
-      machine.registers.comparison_flag = :greater
-      expect(machine.registers.comparison_flag).to eq(:greater)
-    end
-
-    it "sets overflow flag" do
-      machine.registers.overflow = true
-      expect(machine.registers.overflow).to eq(true)
-    end
+    assert_equal true, @machine.halted
+    assert_equal 1, @machine.pc
   end
 
-  describe "instruction execution" do
-    describe "HLT instruction" do
-      it "halts the machine" do
-        # Create HLT instruction at memory[0]
-        hlt_inst = Taocp::Mix::Instruction.new(opcode: Taocp::Mix::Instruction::HLT, field: 2)
-        machine.memory[0] = hlt_inst.to_word
+  # NOP instruction tests
+  def test_nop_instruction_does_nothing_but_advances_pc
+    nop_inst = Taocp::Mix::Instruction.new(opcode: Taocp::Mix::Instruction::NOP)
+    @machine.memory[0] = nop_inst.to_word
 
-        machine.step
+    @machine.step
 
-        expect(machine.halted).to eq(true)
-        expect(machine.pc).to eq(1)
-      end
+    assert_equal 1, @machine.pc
+    assert_equal false, @machine.halted
+  end
+
+  # step tests
+  def test_step_fetches_decodes_and_executes_one_instruction
+    # Put two NOPs and a HLT
+    nop = Taocp::Mix::Instruction.new(opcode: Taocp::Mix::Instruction::NOP).to_word
+    hlt = Taocp::Mix::Instruction.new(opcode: Taocp::Mix::Instruction::HLT, field: 2).to_word
+
+    @machine.memory[0] = nop
+    @machine.memory[1] = nop
+    @machine.memory[2] = hlt
+
+    @machine.step
+    assert_equal 1, @machine.pc
+    assert_equal false, @machine.halted
+
+    @machine.step
+    assert_equal 2, @machine.pc
+    assert_equal false, @machine.halted
+
+    @machine.step
+    assert_equal 3, @machine.pc
+    assert_equal true, @machine.halted
+  end
+
+  def test_step_does_nothing_if_already_halted
+    @machine.halted = true
+    @machine.pc = 5
+
+    @machine.step
+
+    assert_equal 5, @machine.pc  # Unchanged
+  end
+
+  # run tests
+  def test_run_runs_until_hlt
+    # Create a simple program: 3 NOPs then HLT
+    nop = Taocp::Mix::Instruction.new(opcode: Taocp::Mix::Instruction::NOP).to_word
+    hlt = Taocp::Mix::Instruction.new(opcode: Taocp::Mix::Instruction::HLT, field: 2).to_word
+
+    @machine.memory[0] = nop
+    @machine.memory[1] = nop
+    @machine.memory[2] = nop
+    @machine.memory[3] = hlt
+
+    count = @machine.run
+
+    assert_equal true, @machine.halted
+    assert_equal 4, @machine.pc
+    assert_equal 4, count
+  end
+
+  def test_run_stops_after_max_instructions_to_prevent_infinite_loops
+    # Create a program that runs past the limit
+    # We'll fill memory with enough NOPs that it would exceed MAX_INSTRUCTIONS
+    nop = Taocp::Mix::Instruction.new(opcode: Taocp::Mix::Instruction::NOP).to_word
+    # Fill first 1000 locations with NOPs (more than enough to hit limit)
+    (0...1000).each { |i| @machine.memory[i] = nop }
+
+    # Override MAX_INSTRUCTIONS temporarily for faster test
+    original_max = Taocp::Mix::Machine::MAX_INSTRUCTIONS
+    Taocp::Mix::Machine.const_set(:MAX_INSTRUCTIONS, 500)
+
+    # Should raise after 500 instructions
+    assert_raises(Taocp::Mix::Error, /Instruction limit exceeded/) do
+      @machine.run
     end
 
-    describe "NOP instruction" do
-      it "does nothing but advances PC" do
-        nop_inst = Taocp::Mix::Instruction.new(opcode: Taocp::Mix::Instruction::NOP)
-        machine.memory[0] = nop_inst.to_word
+    # Restore original
+    Taocp::Mix::Machine.const_set(:MAX_INSTRUCTIONS, original_max)
+  end
 
-        machine.step
+  def test_run_returns_instruction_count
+    nop = Taocp::Mix::Instruction.new(opcode: Taocp::Mix::Instruction::NOP).to_word
+    hlt = Taocp::Mix::Instruction.new(opcode: Taocp::Mix::Instruction::HLT, field: 2).to_word
 
-        expect(machine.pc).to eq(1)
-        expect(machine.halted).to eq(false)
-      end
-    end
+    @machine.memory[0] = nop
+    @machine.memory[1] = nop
+    @machine.memory[2] = hlt
 
-    describe "#step" do
-      it "fetches, decodes, and executes one instruction" do
-        # Put two NOPs and a HLT
-        nop = Taocp::Mix::Instruction.new(opcode: Taocp::Mix::Instruction::NOP).to_word
-        hlt = Taocp::Mix::Instruction.new(opcode: Taocp::Mix::Instruction::HLT, field: 2).to_word
-
-        machine.memory[0] = nop
-        machine.memory[1] = nop
-        machine.memory[2] = hlt
-
-        machine.step
-        expect(machine.pc).to eq(1)
-        expect(machine.halted).to eq(false)
-
-        machine.step
-        expect(machine.pc).to eq(2)
-        expect(machine.halted).to eq(false)
-
-        machine.step
-        expect(machine.pc).to eq(3)
-        expect(machine.halted).to eq(true)
-      end
-
-      it "does nothing if already halted" do
-        machine.halted = true
-        machine.pc = 5
-
-        machine.step
-
-        expect(machine.pc).to eq(5)  # Unchanged
-      end
-    end
-
-    describe "#run" do
-      it "runs until HLT" do
-        # Create a simple program: 3 NOPs then HLT
-        nop = Taocp::Mix::Instruction.new(opcode: Taocp::Mix::Instruction::NOP).to_word
-        hlt = Taocp::Mix::Instruction.new(opcode: Taocp::Mix::Instruction::HLT, field: 2).to_word
-
-        machine.memory[0] = nop
-        machine.memory[1] = nop
-        machine.memory[2] = nop
-        machine.memory[3] = hlt
-
-        count = machine.run
-
-        expect(machine.halted).to eq(true)
-        expect(machine.pc).to eq(4)
-        expect(count).to eq(4)
-      end
-
-      it "stops after MAX_INSTRUCTIONS to prevent infinite loops" do
-        # Create a program that runs past the limit
-        # We'll fill memory with enough NOPs that it would exceed MAX_INSTRUCTIONS
-        nop = Taocp::Mix::Instruction.new(opcode: Taocp::Mix::Instruction::NOP).to_word
-        # Fill first 1000 locations with NOPs (more than enough to hit limit)
-        (0...1000).each { |i| machine.memory[i] = nop }
-
-        # Override MAX_INSTRUCTIONS temporarily for faster test
-        original_max = Taocp::Mix::Machine::MAX_INSTRUCTIONS
-        Taocp::Mix::Machine.const_set(:MAX_INSTRUCTIONS, 500)
-
-        # Should raise after 500 instructions
-        expect { machine.run }.to raise_error(Taocp::Mix::Error, /Instruction limit exceeded/)
-
-        # Restore original
-        Taocp::Mix::Machine.const_set(:MAX_INSTRUCTIONS, original_max)
-      end
-
-      it "returns instruction count" do
-        nop = Taocp::Mix::Instruction.new(opcode: Taocp::Mix::Instruction::NOP).to_word
-        hlt = Taocp::Mix::Instruction.new(opcode: Taocp::Mix::Instruction::HLT, field: 2).to_word
-
-        machine.memory[0] = nop
-        machine.memory[1] = nop
-        machine.memory[2] = hlt
-
-        count = machine.run
-        expect(count).to eq(3)
-        expect(machine.instruction_count).to eq(3)
-      end
-    end
+    count = @machine.run
+    assert_equal 3, count
+    assert_equal 3, @machine.instruction_count
   end
 end
 
-RSpec.describe Taocp::Mix::Registers do
-  let(:registers) { described_class.new }
-
-  describe "#get_index and #set_index" do
-    it "gets and sets index register by number" do
-      word = Taocp::Mix::Word.from_i(42)
-      registers.set_index(3, word)
-      expect(registers.get_index(3).to_i).to eq(42)
-    end
-
-    it "raises error for invalid index number" do
-      expect { registers.get_index(0) }.to raise_error(Taocp::Mix::Error)
-      expect { registers.get_index(7) }.to raise_error(Taocp::Mix::Error)
-      expect { registers.set_index(0, Taocp::Mix::Word.new) }.to raise_error(Taocp::Mix::Error)
-    end
+class MixRegistersTest < Minitest::Test
+  def setup
+    @registers = Taocp::Mix::Registers.new
   end
 
-  describe "#set_index_i and #get_index_i" do
-    it "sets index register from integer" do
-      registers.set_index_i(1, 100)
-      expect(registers.get_index_i(1)).to eq(100)
-    end
+  # get_index and set_index tests
+  def test_gets_and_sets_index_register_by_number
+    word = Taocp::Mix::Word.from_i(42)
+    @registers.set_index(3, word)
+    assert_equal 42, @registers.get_index(3).to_i
+  end
 
-    it "handles negative values" do
-      registers.set_index_i(2, -50)
-      expect(registers.get_index_i(2)).to eq(-50)
-    end
+  def test_raises_error_for_invalid_index_number
+    assert_raises(Taocp::Mix::Error) { @registers.get_index(0) }
+    assert_raises(Taocp::Mix::Error) { @registers.get_index(7) }
+    assert_raises(Taocp::Mix::Error) { @registers.set_index(0, Taocp::Mix::Word.new) }
+  end
 
-    it "raises error for values exceeding 2-byte capacity" do
-      expect { registers.set_index_i(1, 5000) }.to raise_error(ArgumentError, /out of range/)
-      expect { registers.set_index_i(1, -5000) }.to raise_error(ArgumentError, /out of range/)
-    end
+  # set_index_i and get_index_i tests
+  def test_sets_index_register_from_integer
+    @registers.set_index_i(1, 100)
+    assert_equal 100, @registers.get_index_i(1)
+  end
 
-    it "handles maximum valid values" do
-      registers.set_index_i(1, 4095)
-      expect(registers.get_index_i(1)).to eq(4095)
+  def test_handles_negative_values
+    @registers.set_index_i(2, -50)
+    assert_equal(-50, @registers.get_index_i(2))
+  end
 
-      registers.set_index_i(2, -4095)
-      expect(registers.get_index_i(2)).to eq(-4095)
-    end
+  def test_raises_error_for_values_exceeding_2_byte_capacity
+    assert_raises(ArgumentError, /out of range/) { @registers.set_index_i(1, 5000) }
+    assert_raises(ArgumentError, /out of range/) { @registers.set_index_i(1, -5000) }
+  end
+
+  def test_handles_maximum_valid_values
+    @registers.set_index_i(1, 4095)
+    assert_equal 4095, @registers.get_index_i(1)
+
+    @registers.set_index_i(2, -4095)
+    assert_equal(-4095, @registers.get_index_i(2))
   end
 end
 
-RSpec.describe Taocp::Mix::Memory do
-  let(:memory) { described_class.new }
-
-  describe "initialization" do
-    it "creates 4000 words of memory" do
-      expect(memory[0]).to be_a(Taocp::Mix::Word)
-      expect(memory[3999]).to be_a(Taocp::Mix::Word)
-    end
-
-    it "initializes all memory to zero" do
-      expect(memory[0].to_i).to eq(0)
-      expect(memory[1000].to_i).to eq(0)
-      expect(memory[3999].to_i).to eq(0)
-    end
+class MixMemoryTest < Minitest::Test
+  def setup
+    @memory = Taocp::Mix::Memory.new
   end
 
-  describe "bounds checking" do
-    it "raises error for negative address" do
-      expect { memory[-1] }.to raise_error(Taocp::Mix::Error, /Invalid memory address/)
-    end
-
-    it "raises error for address >= 4000" do
-      expect { memory[4000] }.to raise_error(Taocp::Mix::Error, /Invalid memory address/)
-      expect { memory[5000] }.to raise_error(Taocp::Mix::Error, /Invalid memory address/)
-    end
-
-    it "allows valid addresses 0..3999" do
-      expect { memory[0] }.not_to raise_error
-      expect { memory[3999] }.not_to raise_error
-    end
+  # Initialization tests
+  def test_creates_4000_words_of_memory
+    assert_instance_of Taocp::Mix::Word, @memory[0]
+    assert_instance_of Taocp::Mix::Word, @memory[3999]
   end
 
-  describe "storage and retrieval" do
-    it "stores and retrieves words correctly" do
-      word = Taocp::Mix::Word.from_i(12345)
-      memory[100] = word
-      expect(memory[100].to_i).to eq(12345)
-    end
+  def test_initializes_all_memory_to_zero
+    assert_equal 0, @memory[0].to_i
+    assert_equal 0, @memory[1000].to_i
+    assert_equal 0, @memory[3999].to_i
+  end
 
-    it "maintains independent storage locations" do
-      memory[0] = Taocp::Mix::Word.from_i(1)
-      memory[1] = Taocp::Mix::Word.from_i(2)
-      expect(memory[0].to_i).to eq(1)
-      expect(memory[1].to_i).to eq(2)
-    end
+  # Bounds checking tests
+  def test_raises_error_for_negative_address
+    assert_raises(Taocp::Mix::Error, /Invalid memory address/) { @memory[-1] }
+  end
+
+  def test_raises_error_for_address_gte_4000
+    assert_raises(Taocp::Mix::Error, /Invalid memory address/) { @memory[4000] }
+    assert_raises(Taocp::Mix::Error, /Invalid memory address/) { @memory[5000] }
+  end
+
+  def test_allows_valid_addresses_0_to_3999
+    assert @memory[0]
+    assert @memory[3999]
+  end
+
+  # Storage and retrieval tests
+  def test_stores_and_retrieves_words_correctly
+    word = Taocp::Mix::Word.from_i(12345)
+    @memory[100] = word
+    assert_equal 12345, @memory[100].to_i
+  end
+
+  def test_maintains_independent_storage_locations
+    @memory[0] = Taocp::Mix::Word.from_i(1)
+    @memory[1] = Taocp::Mix::Word.from_i(2)
+    assert_equal 1, @memory[0].to_i
+    assert_equal 2, @memory[1].to_i
   end
 end
