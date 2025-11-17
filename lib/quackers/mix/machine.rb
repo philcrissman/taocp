@@ -124,29 +124,247 @@ module Quackers
         @halted = true
       end
 
-      # Stub implementations for Step 8
-      def execute_lda(inst); raise Error, "LDA not yet implemented"; end
-      def execute_ldx(inst); raise Error, "LDX not yet implemented"; end
-      def execute_ld1(inst); raise Error, "LD1 not yet implemented"; end
-      def execute_ld2(inst); raise Error, "LD2 not yet implemented"; end
-      def execute_ld3(inst); raise Error, "LD3 not yet implemented"; end
-      def execute_ld4(inst); raise Error, "LD4 not yet implemented"; end
-      def execute_ld5(inst); raise Error, "LD5 not yet implemented"; end
-      def execute_ld6(inst); raise Error, "LD6 not yet implemented"; end
-      def execute_sta(inst); raise Error, "STA not yet implemented"; end
-      def execute_stx(inst); raise Error, "STX not yet implemented"; end
-      def execute_st1(inst); raise Error, "ST1 not yet implemented"; end
-      def execute_st2(inst); raise Error, "ST2 not yet implemented"; end
-      def execute_st3(inst); raise Error, "ST3 not yet implemented"; end
-      def execute_st4(inst); raise Error, "ST4 not yet implemented"; end
-      def execute_st5(inst); raise Error, "ST5 not yet implemented"; end
-      def execute_st6(inst); raise Error, "ST6 not yet implemented"; end
-      def execute_stj(inst); raise Error, "STJ not yet implemented"; end
-      def execute_stz(inst); raise Error, "STZ not yet implemented"; end
-      def execute_add(inst); raise Error, "ADD not yet implemented"; end
-      def execute_sub(inst); raise Error, "SUB not yet implemented"; end
-      def execute_mul(inst); raise Error, "MUL not yet implemented"; end
-      def execute_div(inst); raise Error, "DIV not yet implemented"; end
+      # Load instructions
+      def execute_lda(inst)
+        load_register(inst, :a)
+      end
+
+      def execute_ldx(inst)
+        load_register(inst, :x)
+      end
+
+      def execute_ld1(inst)
+        load_index_register(inst, 1)
+      end
+
+      def execute_ld2(inst)
+        load_index_register(inst, 2)
+      end
+
+      def execute_ld3(inst)
+        load_index_register(inst, 3)
+      end
+
+      def execute_ld4(inst)
+        load_index_register(inst, 4)
+      end
+
+      def execute_ld5(inst)
+        load_index_register(inst, 5)
+      end
+
+      def execute_ld6(inst)
+        load_index_register(inst, 6)
+      end
+
+      # Helper: Load from memory into a register
+      def load_register(inst, register_name)
+        m = inst.effective_address(@registers)
+        l, r = Word.decode_field_spec(inst.field)
+
+        # Default field is (0:5) - whole word
+        l, r = 0, 5 if inst.field == 0
+
+        # Load field from memory
+        value = @memory[m].slice(l, r)
+
+        # Store into register
+        case register_name
+        when :a
+          @registers.a = value
+        when :x
+          @registers.x = value
+        end
+      end
+
+      # Helper: Load into index register (2-byte registers)
+      def load_index_register(inst, index_num)
+        m = inst.effective_address(@registers)
+        l, r = Word.decode_field_spec(inst.field)
+
+        # Default field for index registers is also (0:5)
+        l, r = 0, 5 if inst.field == 0
+
+        # Load field from memory
+        value = @memory[m].slice(l, r)
+
+        # Store into index register
+        @registers.set_index(index_num, value)
+      end
+      # Store instructions
+      def execute_sta(inst)
+        store_register(inst, @registers.a)
+      end
+
+      def execute_stx(inst)
+        store_register(inst, @registers.x)
+      end
+
+      def execute_st1(inst)
+        store_register(inst, @registers.get_index(1))
+      end
+
+      def execute_st2(inst)
+        store_register(inst, @registers.get_index(2))
+      end
+
+      def execute_st3(inst)
+        store_register(inst, @registers.get_index(3))
+      end
+
+      def execute_st4(inst)
+        store_register(inst, @registers.get_index(4))
+      end
+
+      def execute_st5(inst)
+        store_register(inst, @registers.get_index(5))
+      end
+
+      def execute_st6(inst)
+        store_register(inst, @registers.get_index(6))
+      end
+
+      def execute_stj(inst)
+        # STJ stores the J register (always positive, 2 bytes)
+        m = inst.effective_address(@registers)
+        l, r = Word.decode_field_spec(inst.field)
+        l, r = 0, 5 if inst.field == 0
+
+        # J is stored as an integer, convert to word
+        j_word = Word.from_i(@registers.j)
+
+        @memory[m].store_slice!(l, r, j_word)
+      end
+
+      def execute_stz(inst)
+        # STZ stores zero
+        m = inst.effective_address(@registers)
+        l, r = Word.decode_field_spec(inst.field)
+        l, r = 0, 5 if inst.field == 0
+
+        zero_word = Word.new(sign: 1, bytes: [0, 0, 0, 0, 0])
+        @memory[m].store_slice!(l, r, zero_word)
+      end
+
+      # Helper: Store register value to memory
+      def store_register(inst, register_value)
+        m = inst.effective_address(@registers)
+        l, r = Word.decode_field_spec(inst.field)
+
+        # Default field is (0:5)
+        l, r = 0, 5 if inst.field == 0
+
+        # Store field into memory
+        @memory[m].store_slice!(l, r, register_value)
+      end
+      # Arithmetic instructions
+      def execute_add(inst)
+        m = inst.effective_address(@registers)
+        l, r = Word.decode_field_spec(inst.field)
+        l, r = 0, 5 if inst.field == 0
+
+        # Get value from memory
+        value = @memory[m].slice(l, r)
+
+        # Add to register A
+        result = @registers.a.to_i + value.to_i
+
+        # Check for overflow
+        if result.abs > Word::MAX_VALUE
+          @registers.overflow = true
+          # Wrap around (modulo arithmetic)
+          sign = result < 0 ? -1 : 1
+          result = sign * (result.abs % (Word::MAX_VALUE + 1))
+        end
+
+        @registers.a = Word.from_i(result)
+      end
+
+      def execute_sub(inst)
+        m = inst.effective_address(@registers)
+        l, r = Word.decode_field_spec(inst.field)
+        l, r = 0, 5 if inst.field == 0
+
+        # Get value from memory
+        value = @memory[m].slice(l, r)
+
+        # Subtract from register A
+        result = @registers.a.to_i - value.to_i
+
+        # Check for overflow
+        if result.abs > Word::MAX_VALUE
+          @registers.overflow = true
+          # Wrap around
+          sign = result < 0 ? -1 : 1
+          result = sign * (result.abs % (Word::MAX_VALUE + 1))
+        end
+
+        @registers.a = Word.from_i(result)
+      end
+
+      def execute_mul(inst)
+        m = inst.effective_address(@registers)
+        l, r = Word.decode_field_spec(inst.field)
+        l, r = 0, 5 if inst.field == 0
+
+        # Get value from memory
+        value = @memory[m].slice(l, r)
+
+        # Multiply rA by V
+        result = @registers.a.to_i * value.to_i
+
+        # MUL produces a 10-byte result split across rA (high) and rX (low)
+        # Result sign is product of signs
+        sign = result < 0 ? -1 : 1
+        abs_result = result.abs
+
+        # Split into high and low parts
+        # High part: result / (MAX_VALUE + 1)
+        # Low part: result % (MAX_VALUE + 1)
+        high = abs_result / (Word::MAX_VALUE + 1)
+        low = abs_result % (Word::MAX_VALUE + 1)
+
+        @registers.a = Word.from_i(sign * high)
+        @registers.x = Word.from_i(sign * low)
+      end
+
+      def execute_div(inst)
+        m = inst.effective_address(@registers)
+        l, r = Word.decode_field_spec(inst.field)
+        l, r = 0, 5 if inst.field == 0
+
+        # Get divisor from memory
+        divisor_word = @memory[m].slice(l, r)
+        divisor = divisor_word.to_i
+
+        # Check for division by zero
+        if divisor == 0
+          @registers.overflow = true
+          return
+        end
+
+        # Dividend is rA:rX (10 bytes total)
+        # Construct dividend from rA (high) and rX (low)
+        a_value = @registers.a.to_i
+        x_value = @registers.x.to_i.abs  # X magnitude only
+
+        sign = a_value < 0 ? -1 : 1
+        dividend = sign * (a_value.abs * (Word::MAX_VALUE + 1) + x_value)
+
+        # Perform division
+        quotient = dividend / divisor
+        remainder = dividend % divisor
+
+        # Check for overflow (quotient too large)
+        if quotient.abs > Word::MAX_VALUE
+          @registers.overflow = true
+          return
+        end
+
+        # Store results
+        @registers.a = Word.from_i(quotient)
+        @registers.x = Word.from_i(remainder)
+      end
     end
   end
 end
