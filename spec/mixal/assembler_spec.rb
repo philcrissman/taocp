@@ -217,4 +217,145 @@ RSpec.describe Quackers::Mixal::Assembler do
       }.to raise_error(Quackers::Mixal::SymbolTable::Error, /already defined/)
     end
   end
+
+  describe "second pass - code generation" do
+    it "generates machine code for simple program" do
+      source = <<~MIXAL
+        START LDA VALUE
+              HLT
+        VALUE CON 100
+      MIXAL
+
+      assembler.assemble(source)
+
+      # Check memory contains generated code
+      expect(assembler.memory[0]).to be_a(Quackers::Mix::Word)
+      expect(assembler.memory[1]).to be_a(Quackers::Mix::Word)
+      expect(assembler.memory[2]).to be_a(Quackers::Mix::Word)
+
+      # VALUE should be 100
+      expect(assembler.memory[2].to_i).to eq(100)
+    end
+
+    it "generates correct LDA instruction" do
+      source = "LDA 1000"
+      assembler.assemble(source)
+
+      word = assembler.memory[0]
+      inst = Quackers::Mix::Instruction.from_word(word)
+
+      expect(inst.opcode).to eq(Quackers::Mix::Instruction::LDA)
+      expect(inst.address).to eq(1000)
+      expect(inst.field).to eq(5)  # Default field for LDA
+    end
+
+    it "generates instruction with index" do
+      source = "LDA 1000,1"
+      assembler.assemble(source)
+
+      word = assembler.memory[0]
+      inst = Quackers::Mix::Instruction.from_word(word)
+
+      expect(inst.address).to eq(1000)
+      expect(inst.index).to eq(1)
+    end
+
+    it "generates instruction with field specification" do
+      source = "LDA 1000(1:3)"
+      assembler.assemble(source)
+
+      word = assembler.memory[0]
+      inst = Quackers::Mix::Instruction.from_word(word)
+
+      # Field 1:3 encodes as 8*1 + 3 = 11
+      expect(inst.field).to eq(11)
+    end
+
+    it "resolves symbolic addresses" do
+      source = <<~MIXAL
+        START JMP LOOP
+        LOOP  HLT
+      MIXAL
+
+      assembler.assemble(source)
+
+      word = assembler.memory[0]
+      inst = Quackers::Mix::Instruction.from_word(word)
+
+      # JMP should jump to address 1 (where LOOP is)
+      expect(inst.address).to eq(1)
+    end
+
+    it "handles CON directive" do
+      source = "VALUE CON 12345"
+      assembler.assemble(source)
+
+      expect(assembler.memory[0].to_i).to eq(12345)
+    end
+
+    it "handles ALF directive" do
+      source = 'TEXT ALF HELLO'
+      assembler.assemble(source)
+
+      word = assembler.memory[0]
+      # Check that bytes contain MIX character codes
+      expect(word.bytes).to be_an(Array)
+      expect(word.bytes.length).to eq(5)
+    end
+
+    it "handles negative addresses" do
+      source = "LDA -100"
+      assembler.assemble(source)
+
+      word = assembler.memory[0]
+      inst = Quackers::Mix::Instruction.from_word(word)
+
+      expect(inst.sign).to eq(-1)
+      expect(inst.address).to eq(100)
+    end
+
+    it "sets start address from END directive" do
+      source = <<~MIXAL
+        START LDA 0
+              HLT
+              END START
+      MIXAL
+
+      assembler.assemble(source)
+
+      expect(assembler.start_address).to eq(0)
+    end
+  end
+
+  describe "complete program assembly" do
+    it "assembles and can run simple program" do
+      source = <<~MIXAL
+        * Load value and store it
+        START LDA VALUE
+              STA RESULT
+              HLT
+        VALUE CON 42
+        RESULT CON 0
+              END START
+      MIXAL
+
+      assembler.assemble(source)
+
+      # Create machine and load the program
+      machine = Quackers::Mix::Machine.new
+
+      # Copy assembled code to machine memory
+      (0...10).each do |addr|
+        machine.memory[addr] = assembler.memory[addr]
+      end
+
+      # Run the program
+      machine.run
+
+      # Check result
+      result_addr = assembler.symbol_table.lookup("RESULT")
+      expect(machine.memory[result_addr].to_i).to eq(42)
+    end
+  end
 end
+

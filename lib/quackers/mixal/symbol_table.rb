@@ -64,18 +64,30 @@ module Quackers
           return value
         end
         
-        # Handle expression (SYMBOL+NUM, SYMBOL-NUM, etc.)
-        if expr_str =~ /^([A-Z][A-Z0-9]*)([\+\-])(\d+)$/
-          symbol = $1
+        # Handle expression (SYMBOL+NUM, SYMBOL-NUM, SYMBOL+SYMBOL, etc.)
+        if expr_str =~ /^([A-Z][A-Z0-9]*)([\+\-])(.+)$/
+          left_symbol = $1
           op = $2
-          num = $3.to_i
-          
-          base = lookup(symbol)
-          if base.nil?
-            raise Error, "Undefined symbol: #{symbol}"
+          right_part = $3
+
+          left_value = lookup(left_symbol)
+          if left_value.nil?
+            raise Error, "Undefined symbol: #{left_symbol}"
           end
-          
-          return op == '+' ? base + num : base - num
+
+          # Right part could be a number or another symbol
+          if right_part =~ /^\d+$/
+            right_value = right_part.to_i
+          elsif right_part =~ /^[A-Z][A-Z0-9]*$/
+            right_value = lookup(right_part)
+            if right_value.nil?
+              raise Error, "Undefined symbol: #{right_part}"
+            end
+          else
+            raise Error, "Cannot evaluate expression: #{expr}"
+          end
+
+          return op == '+' ? left_value + right_value : left_value - right_value
         end
         
         # Handle *+NUM or *-NUM (current address relative)
