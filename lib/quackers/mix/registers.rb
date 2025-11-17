@@ -41,6 +41,34 @@ module Quackers
         else raise Error, "Invalid index register: #{n}"
         end
       end
+
+      def set_index(n, word)
+        case n
+        when 1 then @i1 = word
+        when 2 then @i2 = word
+        when 3 then @i3 = word
+        when 4 then @i4 = word
+        when 5 then @i5 = word
+        when 6 then @i6 = word
+        else raise Error, "Invalid index register: #{n}"
+        end
+      end
+
+      # Set index register from integer (convenience method)
+      # Index registers are 2-byte values (field 4:5)
+      def set_index_i(n, value)
+        # Limit to 2 bytes + sign (max value: 4095)
+        if value.abs > 4095
+          raise ArgumentError, "Index register value out of range: #{value} (max ±4095)"
+        end
+        word = Word.from_i(value)
+        set_index(n, word)
+      end
+
+      # Get index register value as integer
+      def get_index_i(n)
+        get_index(n).to_i
+      end
     end
   end
 end
