@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe Quackers::Mix::Word do
+RSpec.describe Taocp::Mix::Word do
   describe "initialization" do
     it "creates a word with default values" do
       word = described_class.new

@@ -2,8 +2,8 @@
 
 # Integration tests using canonical examples from TAOCP
 RSpec.describe "TAOCP Example Programs" do
-  let(:assembler) { Quackers::Mixal::Assembler.new }
-  let(:machine) { Quackers::Mix::Machine.new }
+  let(:assembler) { Taocp::Mixal::Assembler.new }
+  let(:machine) { Taocp::Mix::Machine.new }
 
   def assemble_and_load(source)
     assembler.assemble(source)

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Quackers
+module Taocp
   module Mixal
     # Tokenizes MIXAL assembly source code
     class Lexer

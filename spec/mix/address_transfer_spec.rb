@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 RSpec.describe "MIX Address Transfer Instructions" do
-  let(:machine) { Quackers::Mix::Machine.new }
-  let(:inst_class) { Quackers::Mix::Instruction }
-  let(:word_class) { Quackers::Mix::Word }
+  let(:machine) { Taocp::Mix::Machine.new }
+  let(:inst_class) { Taocp::Mix::Instruction }
+  let(:word_class) { Taocp::Mix::Word }
 
   describe "ENT - Enter register" do
     it "ENTA sets A register to immediate value" do

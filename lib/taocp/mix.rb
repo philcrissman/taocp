@@ -7,7 +7,7 @@ require_relative "mix/registers"
 require_relative "mix/memory"
 require_relative "mix/machine"
 
-module Quackers
+module Taocp
   module Mix
     class Error < StandardError; end
   end

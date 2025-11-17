@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Quackers
+module Taocp
   module Mix
     # The MIX virtual machine
     class Machine

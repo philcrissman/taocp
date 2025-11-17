@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-RSpec.describe Quackers::Mixal::Parser do
-  let(:parser_class) { Quackers::Mixal::Parser }
-  let(:lexer_class) { Quackers::Mixal::Lexer }
+RSpec.describe Taocp::Mixal::Parser do
+  let(:parser_class) { Taocp::Mixal::Parser }
+  let(:lexer_class) { Taocp::Mixal::Lexer }
 
   describe "basic instruction parsing" do
     it "parses a simple instruction" do
@@ -11,7 +11,7 @@ RSpec.describe Quackers::Mixal::Parser do
       ast = parser_class.parse(tokens)
 
       expect(ast.length).to eq(1)
-      expect(ast[0]).to be_a(Quackers::Mixal::Parser::Instruction)
+      expect(ast[0]).to be_a(Taocp::Mixal::Parser::Instruction)
       expect(ast[0].operation).to eq("LDA")
       expect(ast[0].address).to eq(1000)
       expect(ast[0].label).to be_nil
@@ -127,7 +127,7 @@ RSpec.describe Quackers::Mixal::Parser do
       tokens = lexer_class.tokenize(source)
       ast = parser_class.parse(tokens)
 
-      expect(ast[0]).to be_a(Quackers::Mixal::Parser::PseudoOp)
+      expect(ast[0]).to be_a(Taocp::Mixal::Parser::PseudoOp)
       expect(ast[0].operation).to eq("ORIG")
       expect(ast[0].value).to eq(1000)
     end
@@ -210,7 +210,7 @@ RSpec.describe Quackers::Mixal::Parser do
       expect(ast[2].operation).to eq("HLT")
 
       # Check CON directives
-      expect(ast[3]).to be_a(Quackers::Mixal::Parser::PseudoOp)
+      expect(ast[3]).to be_a(Taocp::Mixal::Parser::PseudoOp)
       expect(ast[3].label).to eq("VALUE")
       expect(ast[3].value).to eq(100)
 
@@ -263,7 +263,7 @@ RSpec.describe Quackers::Mixal::Parser do
       expect(ast.length).to be > 8
 
       # Check ORIG
-      orig = ast.find { |node| node.is_a?(Quackers::Mixal::Parser::PseudoOp) && node.operation == "ORIG" }
+      orig = ast.find { |node| node.is_a?(Taocp::Mixal::Parser::PseudoOp) && node.operation == "ORIG" }
       expect(orig.value).to eq(0)
 
       # Check LOOP label

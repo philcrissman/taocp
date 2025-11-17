@@ -1,13 +1,13 @@
-require_relative "lib/quackers/version"
+require_relative "lib/taocp/version"
 
 Gem::Specification.new do |spec|
-  spec.name          = "quackers"
-  spec.version       = Quackers::VERSION
-  spec.authors       = ["Your Name"]
-  spec.email         = ["your.email@example.com"]
+  spec.name          = "taocp"
+  spec.version       = Taocp::VERSION
+  spec.authors       = ["Phil Crissman"]
+  spec.email         = ["phil@example.com"]
 
-  spec.summary       = "A delightful Ruby gem"
-  spec.description   = "Quackers is a Ruby gem that brings joy and functionality to your projects"
+  spec.summary       = "MIX/MIXAL interpreter from Knuth's TAOCP"
+  spec.description   = "A complete implementation of Donald Knuth's MIX computer and MIXAL assembly language from The Art of Computer Programming (TAOCP)"
   spec.homepage      = "https://github.com/philcrissman/quack"
   spec.license       = "MIT"
   spec.required_ruby_version = ">= 2.6.0"

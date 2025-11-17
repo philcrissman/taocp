@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-RSpec.describe Quackers::Mixal::SymbolTable do
-  let(:symbol_table) { Quackers::Mixal::SymbolTable.new }
+RSpec.describe Taocp::Mixal::SymbolTable do
+  let(:symbol_table) { Taocp::Mixal::SymbolTable.new }
 
   describe "symbol definition" do
     it "defines a symbol" do
@@ -19,7 +19,7 @@ RSpec.describe Quackers::Mixal::SymbolTable do
       symbol_table.define("LABEL", 100)
       expect {
         symbol_table.define("LABEL", 200)
-      }.to raise_error(Quackers::Mixal::SymbolTable::Error, /already defined/)
+      }.to raise_error(Taocp::Mixal::SymbolTable::Error, /already defined/)
     end
 
     it "checks if symbol is defined" do
@@ -74,13 +74,13 @@ RSpec.describe Quackers::Mixal::SymbolTable do
     it "raises error for undefined symbol" do
       expect {
         symbol_table.evaluate("UNDEFINED")
-      }.to raise_error(Quackers::Mixal::SymbolTable::Error, /Undefined symbol/)
+      }.to raise_error(Taocp::Mixal::SymbolTable::Error, /Undefined symbol/)
     end
 
     it "raises error for undefined symbol in expression" do
       expect {
         symbol_table.evaluate("UNDEFINED+10")
-      }.to raise_error(Quackers::Mixal::SymbolTable::Error, /Undefined symbol/)
+      }.to raise_error(Taocp::Mixal::SymbolTable::Error, /Undefined symbol/)
     end
   end
 

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Quackers
+module Taocp
   module Mix
     # MIX Character encoding/decoding
     # Based on TAOCP Section 1.3.1

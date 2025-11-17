@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 RSpec.describe "MIX Instruction Execution" do
-  let(:machine) { Quackers::Mix::Machine.new }
-  let(:inst_class) { Quackers::Mix::Instruction }
-  let(:word_class) { Quackers::Mix::Word }
+  let(:machine) { Taocp::Mix::Machine.new }
+  let(:inst_class) { Taocp::Mix::Instruction }
+  let(:word_class) { Taocp::Mix::Word }
 
   describe "Load instructions" do
     describe "LDA" do

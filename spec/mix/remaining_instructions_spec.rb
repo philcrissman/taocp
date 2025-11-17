@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 RSpec.describe "MIX Remaining Instructions" do
-  let(:machine) { Quackers::Mix::Machine.new }
-  let(:inst_class) { Quackers::Mix::Instruction }
-  let(:word_class) { Quackers::Mix::Word }
+  let(:machine) { Taocp::Mix::Machine.new }
+  let(:inst_class) { Taocp::Mix::Instruction }
+  let(:word_class) { Taocp::Mix::Word }
 
   describe "Shift instructions" do
     describe "SLA - Shift Left A" do

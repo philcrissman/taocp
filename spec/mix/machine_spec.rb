@@ -1,12 +1,12 @@
 # frozen_string_literal: true
 
-RSpec.describe Quackers::Mix::Machine do
+RSpec.describe Taocp::Mix::Machine do
   let(:machine) { described_class.new }
 
   describe "initialization" do
     it "creates a new machine with initialized state" do
-      expect(machine.memory).to be_a(Quackers::Mix::Memory)
-      expect(machine.registers).to be_a(Quackers::Mix::Registers)
+      expect(machine.memory).to be_a(Taocp::Mix::Memory)
+      expect(machine.registers).to be_a(Taocp::Mix::Registers)
       expect(machine.pc).to eq(0)
       expect(machine.halted).to eq(false)
     end
@@ -30,8 +30,8 @@ RSpec.describe Quackers::Mix::Machine do
   describe "#reset" do
     it "resets machine to initial state" do
       # Modify machine state
-      machine.memory[100] = Quackers::Mix::Word.from_i(42)
-      machine.registers.a = Quackers::Mix::Word.from_i(99)
+      machine.memory[100] = Taocp::Mix::Word.from_i(42)
+      machine.registers.a = Taocp::Mix::Word.from_i(99)
       machine.instance_variable_set(:@pc, 50)
       machine.halted = true
 
@@ -48,16 +48,16 @@ RSpec.describe Quackers::Mix::Machine do
 
   describe "memory access" do
     it "allows reading and writing memory" do
-      word = Quackers::Mix::Word.from_i(12345)
+      word = Taocp::Mix::Word.from_i(12345)
       machine.memory[500] = word
 
       expect(machine.memory[500].to_i).to eq(12345)
     end
 
     it "maintains separate memory locations" do
-      machine.memory[0] = Quackers::Mix::Word.from_i(1)
-      machine.memory[1] = Quackers::Mix::Word.from_i(2)
-      machine.memory[2] = Quackers::Mix::Word.from_i(3)
+      machine.memory[0] = Taocp::Mix::Word.from_i(1)
+      machine.memory[1] = Taocp::Mix::Word.from_i(2)
+      machine.memory[2] = Taocp::Mix::Word.from_i(3)
 
       expect(machine.memory[0].to_i).to eq(1)
       expect(machine.memory[1].to_i).to eq(2)
@@ -67,13 +67,13 @@ RSpec.describe Quackers::Mix::Machine do
 
   describe "register access" do
     it "allows setting and getting register A" do
-      word = Quackers::Mix::Word.from_i(100)
+      word = Taocp::Mix::Word.from_i(100)
       machine.registers.a = word
       expect(machine.registers.a.to_i).to eq(100)
     end
 
     it "allows setting and getting register X" do
-      word = Quackers::Mix::Word.from_i(200)
+      word = Taocp::Mix::Word.from_i(200)
       machine.registers.x = word
       expect(machine.registers.x.to_i).to eq(200)
     end
@@ -100,7 +100,7 @@ RSpec.describe Quackers::Mix::Machine do
     describe "HLT instruction" do
       it "halts the machine" do
         # Create HLT instruction at memory[0]
-        hlt_inst = Quackers::Mix::Instruction.new(opcode: Quackers::Mix::Instruction::HLT, field: 2)
+        hlt_inst = Taocp::Mix::Instruction.new(opcode: Taocp::Mix::Instruction::HLT, field: 2)
         machine.memory[0] = hlt_inst.to_word
 
         machine.step
@@ -112,7 +112,7 @@ RSpec.describe Quackers::Mix::Machine do
 
     describe "NOP instruction" do
       it "does nothing but advances PC" do
-        nop_inst = Quackers::Mix::Instruction.new(opcode: Quackers::Mix::Instruction::NOP)
+        nop_inst = Taocp::Mix::Instruction.new(opcode: Taocp::Mix::Instruction::NOP)
         machine.memory[0] = nop_inst.to_word
 
         machine.step
@@ -125,8 +125,8 @@ RSpec.describe Quackers::Mix::Machine do
     describe "#step" do
       it "fetches, decodes, and executes one instruction" do
         # Put two NOPs and a HLT
-        nop = Quackers::Mix::Instruction.new(opcode: Quackers::Mix::Instruction::NOP).to_word
-        hlt = Quackers::Mix::Instruction.new(opcode: Quackers::Mix::Instruction::HLT, field: 2).to_word
+        nop = Taocp::Mix::Instruction.new(opcode: Taocp::Mix::Instruction::NOP).to_word
+        hlt = Taocp::Mix::Instruction.new(opcode: Taocp::Mix::Instruction::HLT, field: 2).to_word
 
         machine.memory[0] = nop
         machine.memory[1] = nop
@@ -158,8 +158,8 @@ RSpec.describe Quackers::Mix::Machine do
     describe "#run" do
       it "runs until HLT" do
         # Create a simple program: 3 NOPs then HLT
-        nop = Quackers::Mix::Instruction.new(opcode: Quackers::Mix::Instruction::NOP).to_word
-        hlt = Quackers::Mix::Instruction.new(opcode: Quackers::Mix::Instruction::HLT, field: 2).to_word
+        nop = Taocp::Mix::Instruction.new(opcode: Taocp::Mix::Instruction::NOP).to_word
+        hlt = Taocp::Mix::Instruction.new(opcode: Taocp::Mix::Instruction::HLT, field: 2).to_word
 
         machine.memory[0] = nop
         machine.memory[1] = nop
@@ -176,24 +176,24 @@ RSpec.describe Quackers::Mix::Machine do
       it "stops after MAX_INSTRUCTIONS to prevent infinite loops" do
         # Create a program that runs past the limit
         # We'll fill memory with enough NOPs that it would exceed MAX_INSTRUCTIONS
-        nop = Quackers::Mix::Instruction.new(opcode: Quackers::Mix::Instruction::NOP).to_word
+        nop = Taocp::Mix::Instruction.new(opcode: Taocp::Mix::Instruction::NOP).to_word
         # Fill first 1000 locations with NOPs (more than enough to hit limit)
         (0...1000).each { |i| machine.memory[i] = nop }
 
         # Override MAX_INSTRUCTIONS temporarily for faster test
-        original_max = Quackers::Mix::Machine::MAX_INSTRUCTIONS
-        Quackers::Mix::Machine.const_set(:MAX_INSTRUCTIONS, 500)
+        original_max = Taocp::Mix::Machine::MAX_INSTRUCTIONS
+        Taocp::Mix::Machine.const_set(:MAX_INSTRUCTIONS, 500)
 
         # Should raise after 500 instructions
-        expect { machine.run }.to raise_error(Quackers::Mix::Error, /Instruction limit exceeded/)
+        expect { machine.run }.to raise_error(Taocp::Mix::Error, /Instruction limit exceeded/)
 
         # Restore original
-        Quackers::Mix::Machine.const_set(:MAX_INSTRUCTIONS, original_max)
+        Taocp::Mix::Machine.const_set(:MAX_INSTRUCTIONS, original_max)
       end
 
       it "returns instruction count" do
-        nop = Quackers::Mix::Instruction.new(opcode: Quackers::Mix::Instruction::NOP).to_word
-        hlt = Quackers::Mix::Instruction.new(opcode: Quackers::Mix::Instruction::HLT, field: 2).to_word
+        nop = Taocp::Mix::Instruction.new(opcode: Taocp::Mix::Instruction::NOP).to_word
+        hlt = Taocp::Mix::Instruction.new(opcode: Taocp::Mix::Instruction::HLT, field: 2).to_word
 
         machine.memory[0] = nop
         machine.memory[1] = nop
@@ -207,20 +207,20 @@ RSpec.describe Quackers::Mix::Machine do
   end
 end
 
-RSpec.describe Quackers::Mix::Registers do
+RSpec.describe Taocp::Mix::Registers do
   let(:registers) { described_class.new }
 
   describe "#get_index and #set_index" do
     it "gets and sets index register by number" do
-      word = Quackers::Mix::Word.from_i(42)
+      word = Taocp::Mix::Word.from_i(42)
       registers.set_index(3, word)
       expect(registers.get_index(3).to_i).to eq(42)
     end
 
     it "raises error for invalid index number" do
-      expect { registers.get_index(0) }.to raise_error(Quackers::Mix::Error)
-      expect { registers.get_index(7) }.to raise_error(Quackers::Mix::Error)
-      expect { registers.set_index(0, Quackers::Mix::Word.new) }.to raise_error(Quackers::Mix::Error)
+      expect { registers.get_index(0) }.to raise_error(Taocp::Mix::Error)
+      expect { registers.get_index(7) }.to raise_error(Taocp::Mix::Error)
+      expect { registers.set_index(0, Taocp::Mix::Word.new) }.to raise_error(Taocp::Mix::Error)
     end
   end
 
@@ -250,13 +250,13 @@ RSpec.describe Quackers::Mix::Registers do
   end
 end
 
-RSpec.describe Quackers::Mix::Memory do
+RSpec.describe Taocp::Mix::Memory do
   let(:memory) { described_class.new }
 
   describe "initialization" do
     it "creates 4000 words of memory" do
-      expect(memory[0]).to be_a(Quackers::Mix::Word)
-      expect(memory[3999]).to be_a(Quackers::Mix::Word)
+      expect(memory[0]).to be_a(Taocp::Mix::Word)
+      expect(memory[3999]).to be_a(Taocp::Mix::Word)
     end
 
     it "initializes all memory to zero" do
@@ -268,12 +268,12 @@ RSpec.describe Quackers::Mix::Memory do
 
   describe "bounds checking" do
     it "raises error for negative address" do
-      expect { memory[-1] }.to raise_error(Quackers::Mix::Error, /Invalid memory address/)
+      expect { memory[-1] }.to raise_error(Taocp::Mix::Error, /Invalid memory address/)
     end
 
     it "raises error for address >= 4000" do
-      expect { memory[4000] }.to raise_error(Quackers::Mix::Error, /Invalid memory address/)
-      expect { memory[5000] }.to raise_error(Quackers::Mix::Error, /Invalid memory address/)
+      expect { memory[4000] }.to raise_error(Taocp::Mix::Error, /Invalid memory address/)
+      expect { memory[5000] }.to raise_error(Taocp::Mix::Error, /Invalid memory address/)
     end
 
     it "allows valid addresses 0..3999" do
@@ -284,14 +284,14 @@ RSpec.describe Quackers::Mix::Memory do
 
   describe "storage and retrieval" do
     it "stores and retrieves words correctly" do
-      word = Quackers::Mix::Word.from_i(12345)
+      word = Taocp::Mix::Word.from_i(12345)
       memory[100] = word
       expect(memory[100].to_i).to eq(12345)
     end
 
     it "maintains independent storage locations" do
-      memory[0] = Quackers::Mix::Word.from_i(1)
-      memory[1] = Quackers::Mix::Word.from_i(2)
+      memory[0] = Taocp::Mix::Word.from_i(1)
+      memory[1] = Taocp::Mix::Word.from_i(2)
       expect(memory[0].to_i).to eq(1)
       expect(memory[1].to_i).to eq(2)
     end

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Quackers
+module Taocp
   module Mix
     # Manages MIX machine memory (4000 words)
     class Memory

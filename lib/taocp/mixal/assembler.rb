@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Quackers
+module Taocp
   module Mixal
     # MIXAL assembler - converts MIXAL source to MIX machine code
     class Assembler

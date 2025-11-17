@@ -1,6 +1,6 @@
 source "https://rubygems.org"
 
-# Specify your gem's dependencies in quackers.gemspec
+# Specify your gem's dependencies in taocp.gemspec
 gemspec
 
 gem "rake", "~> 13.0"

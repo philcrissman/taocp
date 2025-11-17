@@ -2,7 +2,7 @@
 # frozen_string_literal: true
 
 require "bundler/setup"
-require_relative "../lib/quackers"
+require_relative "../lib/taocp"
 
 # CLI entrypoint for MIX/MIXAL interpreter
 # Usage:
@@ -49,7 +49,7 @@ when "assemble"
 
   # Assemble
   begin
-    assembler = Quackers::Mixal::Assembler.new
+    assembler = Taocp::Mixal::Assembler.new
     assembler.assemble(source)
 
     # Get output filename
@@ -72,7 +72,7 @@ when "assemble"
     puts "✓ Assembled #{input_file} -> #{output_file}"
     puts "  Start address: #{assembler.start_address || 0}"
     puts "  Symbol count: #{assembler.symbol_table.all_symbols.size}"
-  rescue Quackers::Mixal::Error => e
+  rescue Taocp::Mixal::Error => e
     puts "Assembly error: #{e.message}"
     exit 1
   end
@@ -95,7 +95,7 @@ when "run"
     data = File.open(input_file, "rb") { |f| Marshal.load(f) }
 
     # Create machine and load program
-    machine = Quackers::Mix::Machine.new
+    machine = Taocp::Mix::Machine.new
     (0...4000).each do |addr|
       machine.memory[addr] = data[:memory][addr]
     end
@@ -113,7 +113,7 @@ when "run"
     puts "  I1 = #{machine.registers.get_index_i(1)}"
     puts "  I2 = #{machine.registers.get_index_i(2)}"
     puts "  I3 = #{machine.registers.get_index_i(3)}"
-  rescue Quackers::Mix::Error => e
+  rescue Taocp::Mix::Error => e
     puts "Runtime error: #{e.message}"
     exit 1
   end
@@ -134,14 +134,14 @@ when "exec"
   # Read and assemble
   source = File.read(input_file)
   begin
-    assembler = Quackers::Mixal::Assembler.new
+    assembler = Taocp::Mixal::Assembler.new
     assembler.assemble(source)
 
     puts "Assembling #{input_file}..."
     puts "  Start address: #{assembler.start_address || 0}"
 
     # Create machine and load program
-    machine = Quackers::Mix::Machine.new
+    machine = Taocp::Mix::Machine.new
     (0...4000).each do |addr|
       machine.memory[addr] = assembler.memory[addr]
     end
@@ -163,10 +163,10 @@ when "exec"
     puts "  I5 = #{machine.registers.get_index_i(5)}"
     puts "  I6 = #{machine.registers.get_index_i(6)}"
     puts "  J  = #{machine.registers.j}"
-  rescue Quackers::Mixal::Error => e
+  rescue Taocp::Mixal::Error => e
     puts "Assembly error: #{e.message}"
     exit 1
-  rescue Quackers::Mix::Error => e
+  rescue Taocp::Mix::Error => e
     puts "Runtime error: #{e.message}"
     exit 1
   end

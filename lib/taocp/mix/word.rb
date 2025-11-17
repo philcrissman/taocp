@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Quackers
+module Taocp
   module Mix
     # Represents a MIX word: sign + 5 bytes (each 0..63)
     # Sign is +1 or -1

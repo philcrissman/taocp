@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe Quackers::Mix::Instruction do
+RSpec.describe Taocp::Mix::Instruction do
   describe "initialization" do
     it "creates an instruction with default values" do
       inst = described_class.new
@@ -62,7 +62,7 @@ RSpec.describe Quackers::Mix::Instruction do
   describe ".from_word" do
     it "decodes a simple instruction" do
       # 100 = 1*64 + 36
-      word = Quackers::Mix::Word.new(sign: 1, bytes: [1, 36, 1, 5, 8])
+      word = Taocp::Mix::Word.new(sign: 1, bytes: [1, 36, 1, 5, 8])
       inst = described_class.from_word(word)
 
       expect(inst.address).to eq(100)
@@ -73,7 +73,7 @@ RSpec.describe Quackers::Mix::Instruction do
     end
 
     it "decodes NOP instruction" do
-      word = Quackers::Mix::Word.new(sign: 1, bytes: [0, 0, 0, 0, 0])
+      word = Taocp::Mix::Word.new(sign: 1, bytes: [0, 0, 0, 0, 0])
       inst = described_class.from_word(word)
 
       expect(inst.address).to eq(0)
@@ -81,7 +81,7 @@ RSpec.describe Quackers::Mix::Instruction do
     end
 
     it "decodes instruction with negative sign" do
-      word = Quackers::Mix::Word.new(sign: -1, bytes: [0, 50, 2, 13, 8])
+      word = Taocp::Mix::Word.new(sign: -1, bytes: [0, 50, 2, 13, 8])
       inst = described_class.from_word(word)
 
       expect(inst.address).to eq(50)
@@ -111,7 +111,7 @@ RSpec.describe Quackers::Mix::Instruction do
   end
 
   describe "#effective_address" do
-    let(:registers) { Quackers::Mix::Registers.new }
+    let(:registers) { Taocp::Mix::Registers.new }
 
     it "returns address when index is 0" do
       inst = described_class.new(address: 100, index: 0)

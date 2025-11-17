@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-RSpec.describe Quackers::Mixal::Assembler do
-  let(:assembler) { Quackers::Mixal::Assembler.new }
+RSpec.describe Taocp::Mixal::Assembler do
+  let(:assembler) { Taocp::Mixal::Assembler.new }
 
   describe "first pass - symbol table construction" do
     it "builds symbol table for simple program" do
@@ -203,7 +203,7 @@ RSpec.describe Quackers::Mixal::Assembler do
 
       expect {
         assembler.assemble(source)
-      }.to raise_error(Quackers::Mixal::Assembler::Error, /EQU requires a label/)
+      }.to raise_error(Taocp::Mixal::Assembler::Error, /EQU requires a label/)
     end
 
     it "raises error for duplicate label" do
@@ -214,7 +214,7 @@ RSpec.describe Quackers::Mixal::Assembler do
 
       expect {
         assembler.assemble(source)
-      }.to raise_error(Quackers::Mixal::SymbolTable::Error, /already defined/)
+      }.to raise_error(Taocp::Mixal::SymbolTable::Error, /already defined/)
     end
   end
 
@@ -229,9 +229,9 @@ RSpec.describe Quackers::Mixal::Assembler do
       assembler.assemble(source)
 
       # Check memory contains generated code
-      expect(assembler.memory[0]).to be_a(Quackers::Mix::Word)
-      expect(assembler.memory[1]).to be_a(Quackers::Mix::Word)
-      expect(assembler.memory[2]).to be_a(Quackers::Mix::Word)
+      expect(assembler.memory[0]).to be_a(Taocp::Mix::Word)
+      expect(assembler.memory[1]).to be_a(Taocp::Mix::Word)
+      expect(assembler.memory[2]).to be_a(Taocp::Mix::Word)
 
       # VALUE should be 100
       expect(assembler.memory[2].to_i).to eq(100)
@@ -242,9 +242,9 @@ RSpec.describe Quackers::Mixal::Assembler do
       assembler.assemble(source)
 
       word = assembler.memory[0]
-      inst = Quackers::Mix::Instruction.from_word(word)
+      inst = Taocp::Mix::Instruction.from_word(word)
 
-      expect(inst.opcode).to eq(Quackers::Mix::Instruction::LDA)
+      expect(inst.opcode).to eq(Taocp::Mix::Instruction::LDA)
       expect(inst.address).to eq(1000)
       expect(inst.field).to eq(5)  # Default field for LDA
     end
@@ -254,7 +254,7 @@ RSpec.describe Quackers::Mixal::Assembler do
       assembler.assemble(source)
 
       word = assembler.memory[0]
-      inst = Quackers::Mix::Instruction.from_word(word)
+      inst = Taocp::Mix::Instruction.from_word(word)
 
       expect(inst.address).to eq(1000)
       expect(inst.index).to eq(1)
@@ -265,7 +265,7 @@ RSpec.describe Quackers::Mixal::Assembler do
       assembler.assemble(source)
 
       word = assembler.memory[0]
-      inst = Quackers::Mix::Instruction.from_word(word)
+      inst = Taocp::Mix::Instruction.from_word(word)
 
       # Field 1:3 encodes as 8*1 + 3 = 11
       expect(inst.field).to eq(11)
@@ -280,7 +280,7 @@ RSpec.describe Quackers::Mixal::Assembler do
       assembler.assemble(source)
 
       word = assembler.memory[0]
-      inst = Quackers::Mix::Instruction.from_word(word)
+      inst = Taocp::Mix::Instruction.from_word(word)
 
       # JMP should jump to address 1 (where LOOP is)
       expect(inst.address).to eq(1)
@@ -308,7 +308,7 @@ RSpec.describe Quackers::Mixal::Assembler do
       assembler.assemble(source)
 
       word = assembler.memory[0]
-      inst = Quackers::Mix::Instruction.from_word(word)
+      inst = Taocp::Mix::Instruction.from_word(word)
 
       expect(inst.sign).to eq(-1)
       expect(inst.address).to eq(100)
@@ -342,7 +342,7 @@ RSpec.describe Quackers::Mixal::Assembler do
       assembler.assemble(source)
 
       # Create machine and load the program
-      machine = Quackers::Mix::Machine.new
+      machine = Taocp::Mix::Machine.new
 
       # Copy assembled code to machine memory
       (0...10).each do |addr|
@@ -373,7 +373,7 @@ RSpec.describe Quackers::Mixal::Assembler do
       expect(assembler.memory[4].to_i).to eq(200)
 
       # First instruction should reference location 3
-      inst = Quackers::Mix::Instruction.from_word(assembler.memory[0])
+      inst = Taocp::Mix::Instruction.from_word(assembler.memory[0])
       expect(inst.address).to eq(3)
     end
 
@@ -390,8 +390,8 @@ RSpec.describe Quackers::Mixal::Assembler do
       expect(assembler.memory[3].to_i).to eq(42)
 
       # Both instructions should reference the same location
-      inst1 = Quackers::Mix::Instruction.from_word(assembler.memory[0])
-      inst2 = Quackers::Mix::Instruction.from_word(assembler.memory[1])
+      inst1 = Taocp::Mix::Instruction.from_word(assembler.memory[0])
+      inst2 = Taocp::Mix::Instruction.from_word(assembler.memory[1])
       expect(inst1.address).to eq(3)
       expect(inst2.address).to eq(3)
     end

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe Quackers::Mix::Character do
+RSpec.describe Taocp::Mix::Character do
   describe ".char_to_code" do
     it "converts space to 0" do
       expect(described_class.char_to_code(" ")).to eq(0)
@@ -139,7 +139,7 @@ RSpec.describe Quackers::Mix::Character do
   describe ".words_to_string" do
     it "converts words back to string" do
       words = [
-        Quackers::Mix::Word.new(sign: 1, bytes: [8, 5, 12, 12, 15])  # HELLO
+        Taocp::Mix::Word.new(sign: 1, bytes: [8, 5, 12, 12, 15])  # HELLO
       ]
       str = described_class.words_to_string(words)
       expect(str).to eq("HELLO")
@@ -147,8 +147,8 @@ RSpec.describe Quackers::Mix::Character do
 
     it "handles multiple words" do
       words = [
-        Quackers::Mix::Word.new(sign: 1, bytes: [8, 5, 12, 12, 15]),  # HELLO
-        Quackers::Mix::Word.new(sign: 1, bytes: [0, 23, 15, 18, 12])  # " WORL"
+        Taocp::Mix::Word.new(sign: 1, bytes: [8, 5, 12, 12, 15]),  # HELLO
+        Taocp::Mix::Word.new(sign: 1, bytes: [0, 23, 15, 18, 12])  # " WORL"
       ]
       str = described_class.words_to_string(words)
       expect(str).to eq("HELLO WORL")

@@ -25,7 +25,7 @@ A complete implementation of Donald Knuth's MIX computer and MIXAL assembly lang
 Add this line to your application's Gemfile:
 
 ```ruby
-gem 'quackers'
+gem 'taocp'
 ```
 
 And then execute:
@@ -34,7 +34,7 @@ And then execute:
 
 Or install it yourself as:
 
-    $ gem install quackers
+    $ gem install taocp
 
 ## Quick Start
 
@@ -160,14 +160,14 @@ SIZE    EQU   100           Define constant
 You can also use MIX/MIXAL directly from Ruby:
 
 ```ruby
-require 'quackers'
+require 'taocp'
 
 # Assemble a program
-assembler = Quackers::Mixal::Assembler.new
+assembler = Taocp::Mixal::Assembler.new
 assembler.assemble(source_code)
 
 # Create and run MIX machine
-machine = Quackers::Mix::Machine.new
+machine = Taocp::Mix::Machine.new
 
 # Load assembled code
 assembler.memory.each_with_index do |word, addr|
@@ -187,7 +187,7 @@ puts "X register: #{machine.registers.x.to_i}"
 
 ```ruby
 # Create a word from an integer
-word = Quackers::Mix::Word.from_i(12345)
+word = Taocp::Mix::Word.from_i(12345)
 
 # Access components
 word.sign    # => 1 (positive)
@@ -197,7 +197,7 @@ word.bytes   # => [0, 0, 48, 57, 57]
 word.to_i    # => 12345
 
 # Field specifications
-word = Quackers::Mix::Word.new(sign: 1, bytes: [1, 2, 3, 4, 5])
+word = Taocp::Mix::Word.new(sign: 1, bytes: [1, 2, 3, 4, 5])
 word.get_field(1, 3)  # Get bytes 1-3
 ```
 
@@ -205,16 +205,16 @@ word.get_field(1, 3)  # Get bytes 1-3
 
 ```ruby
 # Create an instruction
-inst = Quackers::Mix::Instruction.new(
+inst = Taocp::Mix::Instruction.new(
   address: 1000,
   index: 1,
   field: 5,
-  opcode: Quackers::Mix::Instruction::LDA
+  opcode: Taocp::Mix::Instruction::LDA
 )
 
 # Convert to/from word
 word = inst.to_word
-inst2 = Quackers::Mix::Instruction.from_word(word)
+inst2 = Taocp::Mix::Instruction.from_word(word)
 ```
 
 ## Examples

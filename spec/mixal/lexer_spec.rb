@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-RSpec.describe Quackers::Mixal::Lexer do
-  let(:lexer_class) { Quackers::Mixal::Lexer }
+RSpec.describe Taocp::Mixal::Lexer do
+  let(:lexer_class) { Taocp::Mixal::Lexer }
 
   describe "basic tokenization" do
     it "tokenizes a simple instruction" do
