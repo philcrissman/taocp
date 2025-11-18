@@ -4,7 +4,7 @@ module Taocp
   module Mix
     # The MIX virtual machine
     class Machine
-      attr_reader :memory, :registers
+      attr_reader :memory, :registers, :output
       attr_accessor :pc, :halted
 
       MAX_INSTRUCTIONS = 100_000  # Safety limit
@@ -15,6 +15,7 @@ module Taocp
         @pc = 0  # Program counter
         @halted = false
         @instruction_count = 0
+        @output = []  # Collect output from OUT instructions
       end
 
       # Run until HLT or error
@@ -51,6 +52,7 @@ module Taocp
         @pc = 0
         @halted = false
         @instruction_count = 0
+        @output = []
       end
 
       def instruction_count
@@ -1034,8 +1036,25 @@ module Taocp
 
       # OUT - Output to device F from memory at M
       def execute_out(inst)
-        # Stub: No-op for now
-        # Future: Transfer data to device F from memory starting at M
+        # Transfer data from memory to device F (specified in field)
+        m = inst.effective_address(@registers)
+        device = inst.field
+
+        # Device 18 is the line printer (outputs 5 words = 25 chars per line)
+        # Other devices could be implemented later
+        case device
+        when 18  # Line printer
+          # Read 5 words (25 characters) from memory starting at M
+          words = (0..4).map { |offset| @memory[m + offset] }
+
+          # Convert MIX character codes to string
+          line = Character.codes_to_string(words.flat_map(&:bytes))
+
+          # Add to output
+          @output << line
+        else
+          # Other devices not implemented yet - just ignore
+        end
       end
 
       # IOC - I/O control for device F

@@ -219,13 +219,17 @@ module Taocp
       end
 
       def tokenize_field_spec(spec, line_num, col)
-        # Field spec: L:R or just a number
+        # Field spec: L:R, a number, or a symbol
         if spec =~ /^(\d+):(\d+)$/
           @tokens << Token.new(:number, $1.to_i, line_num, col)
           @tokens << Token.new(:colon, ':', line_num, col + $1.length)
           @tokens << Token.new(:number, $2.to_i, line_num, col + $1.length + 1)
-        else
+        elsif spec =~ /^\d+$/
+          # Pure number
           @tokens << Token.new(:number, spec.to_i, line_num, col)
+        else
+          # Symbol (like PRINTER for device number)
+          @tokens << Token.new(:symbol, spec, line_num, col)
         end
       end
 

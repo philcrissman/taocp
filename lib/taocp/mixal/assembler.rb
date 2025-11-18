@@ -394,8 +394,14 @@ module Taocp
             left = $1.to_i
             right = $2.to_i
             return 8 * left + right
+          elsif explicit_field.to_s =~ /^\d+$/
+            # Numeric field
+            return explicit_field.to_i
           else
-            # Single number
+            # Symbol field (like PRINTER for device number)
+            value = @symbol_table.lookup(explicit_field.to_s)
+            return value if value
+            # If not found, try to parse as number
             return explicit_field.to_i
           end
         end

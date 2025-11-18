@@ -171,17 +171,21 @@ module Taocp
       end
 
       def parse_field_spec
-        # Parse (L:R) or (F)
+        # Parse (L:R), (F), or (SYMBOL)
         advance  # skip lparen
-        
+
         left = nil
         right = nil
-        
+
         if current_token&.type == :number
           left = current_token.value
           advance
+        elsif current_token&.type == :symbol
+          # Symbol field spec (e.g., PRINTER for device number)
+          left = current_token.value
+          advance
         end
-        
+
         if current_token&.type == :colon
           advance  # skip colon
           if current_token&.type == :number
@@ -189,12 +193,12 @@ module Taocp
             advance
           end
         end
-        
+
         # Skip rparen
         if current_token&.type == :rparen
           advance
         end
-        
+
         # Return field spec
         if right
           "#{left}:#{right}"

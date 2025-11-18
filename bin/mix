@@ -152,6 +152,14 @@ when "exec"
     inst_count = machine.run
     puts "✓ Halted after #{inst_count} instructions"
 
+    # Show output if any
+    if machine.output.any?
+      puts "\nOutput:"
+      puts "-" * 60
+      machine.output.each { |line| puts line }
+      puts "-" * 60
+    end
+
     # Show final state
     puts "\nFinal registers:"
     puts "  A  = #{machine.registers.a.to_i}"
