@@ -64,15 +64,20 @@ module Taocp
           return value
         end
         
-        # Handle expression (SYMBOL+NUM, SYMBOL-NUM, SYMBOL+SYMBOL, etc.)
-        if expr_str =~ /^([A-Z][A-Z0-9]*)([\+\-])(.+)$/
-          left_symbol = $1
+        # Handle expression (SYMBOL+NUM, SYMBOL-NUM, SYMBOL+SYMBOL, NUM+SYMBOL, NUM-SYMBOL, etc.)
+        if expr_str =~ /^([A-Z][A-Z0-9]*|\d+)([\+\-])(.+)$/
+          left_part = $1
           op = $2
           right_part = $3
 
-          left_value = lookup(left_symbol)
-          if left_value.nil?
-            raise Error, "Undefined symbol: #{left_symbol}"
+          # Left part could be a symbol or number
+          if left_part =~ /^\d+$/
+            left_value = left_part.to_i
+          else
+            left_value = lookup(left_part)
+            if left_value.nil?
+              raise Error, "Undefined symbol: #{left_part}"
+            end
           end
 
           # Right part could be a number or another symbol

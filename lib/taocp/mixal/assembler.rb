@@ -144,7 +144,8 @@ module Taocp
             # Generate literal pool entry
             literal_text = inst_info[:value]
             if literal_text =~ /^=(.+)=$/
-              value = $1.to_i
+              # Evaluate the expression inside the literal (e.g., "1-L" should compute 1-500=-499)
+              value = evaluate_expression($1, location)
               @memory[location] = Mix::Word.from_i(value)
             end
           when Parser::PseudoOp
