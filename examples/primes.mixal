@@ -35,6 +35,7 @@ SETUP LDA PRIME,5  P10. Set up line. (Right to left)
   OUT 0,4(PRINTER) P11. Print line.
   LD4 24,4 Switch buffers
   J5N NEXTM I rI5 = 0, we are done
+  HLT * Halt when done
 * INITIAL CONTENT OF TABLES AND BUFFER
   ORIG PRIME+1
   CON 2 The first prime is 2
