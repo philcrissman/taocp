@@ -18,12 +18,12 @@ module Taocp
       end
 
       # Run until HLT or error
-      def run
+      def run(max_instructions: MAX_INSTRUCTIONS)
         @instruction_count = 0
         until @halted
           step
           @instruction_count += 1
-          if @instruction_count > MAX_INSTRUCTIONS
+          if @instruction_count > max_instructions
             raise Error, "Instruction limit exceeded (infinite loop?)"
           end
         end

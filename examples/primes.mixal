@@ -1,0 +1,51 @@
+* Example program ... table of primes
+*
+L EQU 500 The number of primes to find
+PRINTER EQU 18 Unit number of the line printer
+PRIME EQU -1 Memory area for table of primes
+BUF0 EQU 2000 Memory area for BUFFER[0]
+BUF1 EQU BUF0+25 Memory area for BUFFER[1]
+  ORIG 3000
+START IOC 0(PRINTER) Skip to new page
+  LD1 =1-L= P1. Start table J <- 1.
+  LD2 =3= N <- 3
+NISPRM INC1 1 P2. N is prime. J <- J + 1.
+  ST2 PRIME+L,1  PRIME[J] <- N.
+  J1Z PRINT P3. 500 found?
+ADVN INC2 2 P4. Advance N.
+  ENT3 2 P5. K <- 2.
+DIVCHK ENTA 0 P6. PRIME[K]\N?
+  ENTX 0,2  rAX <- N.
+  DIV PRIME,3 rA <- Q, rX <- R.
+  JXZ ADVN To P4 if R = 0.
+  CMPA PRIME,3  P7. PRIME[K] large?
+  INC3 1 P8. Advance K.
+  JG DIVCHK To P6 if Q > PRIME[K]
+  JMP NISPRM Otherwise N is prime.
+PRINT OUT TITLE(PRINTER) P9. Print title.
+  ENT4 BUF1+10 Set B <- 1.
+  ENT5 -50 Set M <- 0.
+NEXTM INC5 L+1 Advance M.
+SETUP LDA PRIME,5  P10. Set up line. (Right to left)
+  CHAR * Convert PRIME[M] to decimal
+  STX 0,4(1:4)
+  DEC4 1
+  DEC5 50 (rI5 goes down by 50 until
+  J5P SETUP   it becomes nonpositive)
+  OUT 0,4(PRINTER) P11. Print line.
+  LD4 24,4 Switch buffers
+  J5N NEXTM I rI5 = 0, we are done
+* INITIAL CONTENT OF TABLES AND BUFFER
+  ORIG PRIME+1
+  CON 2 The first prime is 2
+  ORIG BUF0-5
+TITLE ALF FIRST Alphabetic information for
+  ALF FIVE        title line
+  ALF HUND
+  ALF RED P
+  ALF RIMES
+  ORIG BUF0+24
+  CON BUF1+10 Each buffer refers to the other
+  ORIG BUF1+24
+  CON BUF0+10
+  END START End of routine.

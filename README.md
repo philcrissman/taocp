@@ -1,17 +1,15 @@
 # TAOCP - MIX/MIXAL Interpreter
 
-A complete Ruby implementation of **MIX**, the mythical computer created by Donald Knuth for his landmark series "The Art of Computer Programming" (TAOCP), along with its assembly language **MIXAL**.
+A complete Ruby implementation of **MIX**, the computer created by Donald Knuth for his series "The Art of Computer Programming" (TAOCP), along with its assembly language **MIXAL**.
 
 ## What is MIX?
 
-[MIX](https://en.wikipedia.org/wiki/MIX_(abstract_machine)) is a hypothetical computer designed by Donald Knuth in the 1960s as a pedagogical tool for teaching fundamental computer science concepts. It appears throughout TAOCP to illustrate algorithms in a machine-independent but concrete way.
+[MIX](https://en.wikipedia.org/wiki/MIX_(abstract_machine)) is a hypothetical computer designed by Donald Knuth in the 1960s as a tool for teaching fundamental computer science concepts. It appears throughout TAOCP to illustrate algorithms in a machine-independent way.
 
 **Key characteristics:**
 - Bytes hold values 0-63 (not 0-255 like modern computers)
 - Sign-magnitude representation
 - Word-addressed memory (not byte-addressed)
-- Simple, elegant instruction set
-- Designed to be easy to understand while still being realistic
 
 MIX is intentionally old-fashioned, representing computers of the 1960s era. Knuth later created [MMIX](https://en.wikipedia.org/wiki/MMIX), a more modern 64-bit RISC architecture, but MIX remains the primary machine for TAOCP Volumes 1-3.
 
@@ -83,7 +81,7 @@ $ mix exec examples/factorial.mixal
 
 ### Example Program
 
-Here's a simple MIXAL program that calculates 6! (factorial of 6):
+Here's the MIXAL program that calculates 6! (factorial of 6):
 
 ```mixal
 * Calculate factorial of 6 (result = 720)
@@ -247,7 +245,7 @@ inst2 = Taocp::Mix::Instruction.from_word(word)
 
 ## Examples
 
-The `examples/` directory contains several example programs:
+The `examples/` directory at the moment has only one example:
 
 - `factorial.mixal` - Calculate factorial
 - More examples coming soon!
