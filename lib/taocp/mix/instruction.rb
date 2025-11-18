@@ -212,8 +212,8 @@ module Taocp
       def effective_address(registers)
         m = @sign * @address
         if @index > 0
-          # Add index register value (using only bytes 4:5, the rightmost 2 bytes)
-          index_value = registers.get_index(@index).slice(4, 5).to_i
+          # Add index register value (signed 2-byte value)
+          index_value = registers.get_index_i(@index)
           m += index_value
         end
         m.abs  # MIX addresses are always positive
