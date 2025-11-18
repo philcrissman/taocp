@@ -233,9 +233,15 @@ module Taocp
         # Find comment start (not inside quotes)
         # Comments can be:
         # 1. Text after * (if preceded by whitespace)
-        # 2. Text after 2+ spaces (traditional MIXAL comment convention)
+        # 2. Text after whitespace following a complete token (MIXAL convention)
+        #
+        # Strategy: Find the first position after a complete token where whitespace begins.
+        # A complete token is a sequence of non-space characters not containing operators
+        # within the address field (like + or -)
         in_string = false
         prev_char = nil
+        in_token = false
+
         text.each_char.with_index do |char, i|
           if char == '"' || char == "'"
             in_string = !in_string
@@ -244,14 +250,14 @@ module Taocp
             if char == '*' && i > 0 && text[i-1] =~ /\s/
               return i
             end
-            # Check for multiple spaces indicating start of comment
-            # Look for pattern: non-space followed by 2+ spaces
-            if i > 2 && char =~ /\S/ && prev_char =~ /\s/ && text[i-2] =~ /\s/
-              # We found text after 2+ spaces - this is likely a comment
-              # Back up to where the spaces started
-              j = i - 1
-              j -= 1 while j > 0 && text[j] =~ /\s/
-              return j + 1
+
+            # Track when we're in a token (non-space characters)
+            if char =~ /\S/
+              in_token = true
+            elsif in_token && char =~ /\s/
+              # We've hit the end of a token (space after non-space)
+              # Everything from here on is a comment
+              return i
             end
           end
           prev_char = char
