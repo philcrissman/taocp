@@ -211,7 +211,7 @@ class MixalLexerTest < Minitest::Test
 
     assert_equal :operation, tokens[0].type
     assert_equal "ALF", tokens[0].value
-    assert_equal :symbol, tokens[1].type
+    assert_equal :alf_value, tokens[1].type
     assert_equal "HELLO", tokens[1].value
   end
 

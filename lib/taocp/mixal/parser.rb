@@ -210,16 +210,24 @@ module Taocp
       end
 
       def parse_pseudo_op_value
-        # Parse value for pseudo-ops (EQU, CON, ORIG, etc.)
-        # This can be a number, symbol, or expression
-        
+        # Parse value for pseudo-ops (EQU, CON, ORIG, ALF, etc.)
+        # ALF takes a literal 5-character string
+        # Others can be numbers, symbols, or expressions
+
+        # Special case for ALF
+        if current_token&.type == :alf_value
+          value = current_token.value
+          advance
+          return value
+        end
+
         value_tokens = []
-        
+
         while current_token && [:number, :symbol, :current_address, :plus, :minus].include?(current_token.type)
           value_tokens << current_token
           advance
         end
-        
+
         if value_tokens.empty?
           nil
         elsif value_tokens.length == 1

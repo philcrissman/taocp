@@ -79,10 +79,27 @@ module Taocp
           col += operation.length + 1
         end
 
-        # Rest is address field (including index, field spec) and optional comment
-        if parts.length > 0
-          rest = parts.join(" ")
-          tokenize_address_and_comment(rest, line_num, col)
+        # Special handling for ALF - takes next 5 characters literally
+        if operation&.upcase == 'ALF'
+          if parts.length > 0
+            # For ALF, take the rest of the line (up to 5 chars) as the value
+            # Find where the operation ends in the original line
+            op_end = line.index(operation) + operation.length
+            rest_of_line = line[op_end..-1]
+
+            # Skip leading whitespace and take up to 5 chars
+            value_start = rest_of_line.index(/\S/)
+            if value_start
+              value = rest_of_line[value_start, 5] || rest_of_line[value_start..-1]
+              @tokens << Token.new(:alf_value, value, line_num, col)
+            end
+          end
+        else
+          # Rest is address field (including index, field spec) and optional comment
+          if parts.length > 0
+            rest = parts.join(" ")
+            tokenize_address_and_comment(rest, line_num, col)
+          end
         end
       end
 
